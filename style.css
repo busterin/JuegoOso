@@ -61,7 +61,7 @@ body { font-family: system-ui, -apple-system, Arial, sans-serif; background:#eaf
 
 /* Oso: anclado al suelo */
 .player {
-  width:90px; height:90px; left:120px; bottom:0 !important;
+  width:90px; height:90px; left:120px; bottom:0;
   background-image:url("img/Oso.png");
   transition: transform .08s linear;
 }
