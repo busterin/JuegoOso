@@ -18,7 +18,7 @@ const LEVEL_WIDTH = 12000;
 const GROUND_Y = 0;
 const GRAVITY = 1850;
 const RUN_SPEED = 100;
-const JUMP_VELOCITY = 840;   // ↑ un poco más de salto vertical
+const JUMP_VELOCITY = 840;   // un poco más de salto vertical
 const ROCK_SPEED = 90;
 const PARALLAX_FACTOR = 0.3;
 
@@ -27,7 +27,11 @@ const JUMP_FORWARD_SPEED = 210; // velocidad horizontal objetivo al despegar
 const JUMP_BOOST_TIME   = 380;  // ms de avance garantizado tras despegar
 const AIR_ACCEL         = 650;  // aceleración en el aire con A/D o ←/→
 const MAX_AIR_SPEED     = 220;  // límite de velocidad horizontal en el aire
-const AIR_DRIFT_MIN     = 130;  // avance mínimo continuo en el aire si no pulsas nada
+const AIR_DRIFT_MIN     = 130;  // avance mínimo en el aire si no pulsas nada
+
+// Stomp (aplastar rocas desde arriba)
+const STOMP_TOLERANCE = 18;     // margen para considerar que cae "encima"
+const STOMP_BOUNCE    = 520;    // rebote al aplastar
 
 // Spawning de rocas (nunca juntas)
 const ROCK_MIN_GAP       = 480; // separación mínima entre rocas (px)
@@ -79,7 +83,7 @@ const runnerRocks = [];
 function spawnRock(x) {
   const el = elem('div','runner-rock',{ left:x+'px' });
   runnerRocksEl.appendChild(el);
-  const r = { x, y:0, width:70, height:70, el };
+  const r = { x, y:0, width:70, height:70, el, dead:false };
   runnerRocks.push(r);
 }
 // Spawning inicial espaciado
@@ -231,35 +235,70 @@ function loop(ts) {
       if (it.el) { it.el.style.left = it.x + 'px'; it.el.style.bottom = it.y + 'px'; }
     }
 
-    // Rocas: mover y respawnear con distancia mínima
+    // Rocas: mover, stomp y respawn con distancia mínima
     for (const r of runnerRocks) {
-      r.x -= ROCK_SPEED * dt;
+      if (r.dead) continue;
 
-      if (r.x < -100) {
-        // calcular la roca más a la derecha (excluyendo esta)
-        let lastX = viewport.clientWidth;
-        for (const o of runnerRocks) {
-          if (o !== r && o.x > lastX) lastX = o.x;
-        }
-        // nuevo spawn garantizando separación
-        const rightEdge = viewport.clientWidth + ROCK_RESPAWN_BASE + Math.random()*ROCK_RESPAWN_RAND;
-        r.x = Math.max(rightEdge, lastX + ROCK_MIN_GAP + Math.random()*120);
-      }
+      r.x -= ROCK_SPEED * dt;
 
       // Colisión en coords de pantalla
       const center = Math.min(Math.max(player.x, viewport.clientWidth/2), LEVEL_WIDTH - viewport.clientWidth/2);
       const offset = -center + viewport.clientWidth/2;
       const pScreen = { x: player.x + offset, y: player.y, width: player.width*(player.big?1.45:1), height: player.height*(player.big?1.45:1) };
       const rRect   = { x: r.x, y: 0, width: r.width, height: r.height };
-      const coll = !((pScreen.x + pScreen.width - 10) < (rRect.x + 10) ||
-                     (pScreen.x + 10) > (rRect.x + rRect.width - 10) ||
-                     (pScreen.y + pScreen.height - 10) < (rRect.y + 10) ||
-                     (pScreen.y + 10) > (rRect.y + rRect.height - 10));
-      if (coll) {
-        if (player.big) { player.big = false; playerEl.classList.remove('big'); setHUDActive(false); }
-        else { running = false; gameOverTitle.textContent = '¡Ay! Te golpeó una roca'; gameOverOverlay.classList.add('visible'); }
-        r.x = -120; // evitar doble golpe
+
+      const overlap = !((pScreen.x + pScreen.width - 10) < (rRect.x + 10) ||
+                        (pScreen.x + 10) > (rRect.x + rRect.width - 10) ||
+                        (pScreen.y + pScreen.height - 10) < (rRect.y + 10) ||
+                        (pScreen.y + 10) > (rRect.y + rRect.height - 10));
+
+      if (overlap) {
+        // ¿Stomp? (está cayendo y su "suelo" está cerca del top de la roca)
+        const rockTop = rRect.y + rRect.height;
+        const isFalling = player.vy < 0;
+        const nearTop = (pScreen.y <= rockTop + STOMP_TOLERANCE) && (pScreen.y >= rockTop - STOMP_TOLERANCE);
+
+        if (isFalling && nearTop) {
+          // Aplastar roca
+          r.dead = true;
+          r.el.style.opacity = '0';
+          r.x = -999; // la sacamos de pantalla
+
+          // Rebote del jugador
+          player.vy = STOMP_BOUNCE;
+          player.onGround = false;
+
+          // Reaparecer la roca más adelante respetando la separación mínima
+          setTimeout(() => {
+            r.el.style.opacity = '1';
+            r.dead = false;
+            // calcular la roca más a la derecha
+            let lastX = viewport.clientWidth;
+            for (const o of runnerRocks) {
+              if (o !== r && !o.dead && o.x > lastX) lastX = o.x;
+            }
+            const rightEdge = viewport.clientWidth + ROCK_RESPAWN_BASE + Math.random()*ROCK_RESPAWN_RAND;
+            r.x = Math.max(rightEdge, lastX + ROCK_MIN_GAP + Math.random()*120);
+          }, 180); // pequeño delay para evitar re-colisión instantánea
+        } else {
+          // Golpe frontal/lateral: daño normal
+          if (player.big) { player.big = false; playerEl.classList.remove('big'); setHUDActive(false); }
+          else { running = false; gameOverTitle.textContent = '¡Ay! Te golpeó una roca'; gameOverOverlay.classList.add('visible'); }
+          // empujar roca fuera para evitar doble golpe
+          r.x = -120;
+        }
       }
+
+      // Respawn por salir de pantalla
+      if (r.x < -140 && !r.dead) {
+        let lastX = viewport.clientWidth;
+        for (const o of runnerRocks) {
+          if (o !== r && !o.dead && o.x > lastX) lastX = o.x;
+        }
+        const rightEdge = viewport.clientWidth + ROCK_RESPAWN_BASE + Math.random()*ROCK_RESPAWN_RAND;
+        r.x = Math.max(rightEdge, lastX + ROCK_MIN_GAP + Math.random()*120);
+      }
+
       r.el.style.left = r.x + 'px';
     }
   }
