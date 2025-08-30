@@ -55,27 +55,5 @@
   </main>
 
   <script src="script.js"></script>
-  <script>
-    const homeScreen = document.getElementById('homeScreen');
-    const gameScreen = document.getElementById('gameScreen');
-    const playBtn = document.getElementById('playBtn');
-    const backHomeBtn = document.getElementById('backHomeBtn');
-    const retryBtn = document.getElementById('retryBtn');
-
-    // Inicia el juego
-    playBtn.addEventListener('click', () => {
-      homeScreen.style.display = 'none';
-      gameScreen.style.display = 'block';
-      if (typeof startGame === "function") startGame();
-    });
-
-    // Volver al inicio
-    backHomeBtn.addEventListener('click', () => {
-      location.reload(); // recarga la página, vuelve al inicio
-    });
-
-    // Reintentar
-    retryBtn.addEventListener('click', () => location.reload());
-  </script>
 </body>
 </html>
