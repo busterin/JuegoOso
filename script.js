@@ -5,11 +5,10 @@ const playBtn = document.getElementById('playBtn');
 const backHomeBtn = document.getElementById('backHomeBtn');
 const retryBtn = document.getElementById('retryBtn');
 
-let running = false;   // no corre hasta pulsar JUGAR
-let started = false;   // para evitar re-inicializaciones dobles
+let running = false;   
+let started = false;   
 
 function startGame() {
-  // Mostrar juego primero (viewport tendrá ancho real)
   homeScreen.style.display = 'none';
   gameScreen.style.display = 'block';
 
@@ -41,7 +40,7 @@ const honeyHUD = document.getElementById('honeyHUD');
 
 /***** CONFIGURACIÓN *****/
 const LEVEL_WIDTH = 12000;
-const GROUND_Y = 0;           // 0 = pegado al suelo del recuadro
+const GROUND_Y = 0;           
 const GRAVITY = 1850;
 const RUN_SPEED = 100;
 const JUMP_VELOCITY = 840;
@@ -61,7 +60,7 @@ const ATTACK_COOLDOWN  = 320;
 const ATTACK_RANGE_X   = 110;
 const ATTACK_RANGE_Y   = 90;
 
-// Rocas (separación)
+// Rocas
 const ROCK_MIN_GAP       = 480;
 const ROCK_RESPAWN_BASE  = 220;
 const ROCK_RESPAWN_RAND  = 520;
@@ -74,15 +73,11 @@ let attackUntil = 0;
 let nextAttackTime = 0;
 let last = 0;
 
-// Espada (y fallback si el GIF no existe)
+// Espada
 const swordEl = playerEl.querySelector('.sword');
 (function ensureSwordImage(){
   const test = new Image();
-  test.onload = () => { /* ok gif */ };
-  test.onerror = () => {
-    // Cambiar a PNG si el GIF no está
-    swordEl.style.backgroundImage = 'url("img/Espada.png")';
-  };
+  test.onerror = () => { swordEl.style.backgroundImage = 'url("img/Espada.png")'; };
   test.src = 'img/Espada.gif';
 })();
 
@@ -116,11 +111,8 @@ function initLevel() {
   caveEl.style.left = caveX + 'px';
   caveEl.dataset.x = caveX;
 
-  // Aseguramos oso en el suelo al iniciar
-  player.x = 120; player.y = GROUND_Y; player.vx = 0; player.vy = 0;
-  player.onGround = true; player.facing = 1; player.big = false;
-  playerEl.className = 'player';
-  setHUDActive(false);
+  // Reset oso al suelo
+  resetState();
 }
 function placeBlock(x) {
   const el = elem('div','block',{ left:x+'px' });
@@ -170,7 +162,11 @@ const keys = { left:false, right:false, jump:false, attack:false };
 document.addEventListener('keydown', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-  if (e.code === 'Space') keys.jump = true;
+
+  if (e.code === 'Space') {
+    e.preventDefault(); // <- evita scroll
+    keys.jump = true;
+  }
   if (e.code === 'KeyS') keys.attack = true;
 });
 document.addEventListener('keyup', e => {
@@ -186,7 +182,7 @@ function tryStartAttack(ts){
   isAttacking = true;
   attackUntil = ts + ATTACK_DURATION;
   nextAttackTime = ts + ATTACK_COOLDOWN;
-  playerEl.classList.add('attacking'); // <- muestra la espada
+  playerEl.classList.add('attacking');
 }
 function getAttackRect(pScreen){
   if (player.facing > 0) {
@@ -262,7 +258,6 @@ function loop(ts) {
     player.x  += player.vx * dt;
     player.y  += player.vy * dt;
 
-    // Clamp suelo (por si acaso): evita “flotar”
     if (player.y < GROUND_Y) { player.y = GROUND_Y; player.vy = 0; player.onGround = true; }
     if (player.x < 0) player.x = 0;
     if (player.x > LEVEL_WIDTH - player.width) player.x = LEVEL_WIDTH - player.width;
@@ -280,7 +275,7 @@ function loop(ts) {
       }
     }
 
-    // Panal: cae y pickup -> vida extra
+    // Panal
     for (const it of items) {
       if (it.taken) continue;
       if (!it.onGround) {
@@ -301,13 +296,11 @@ function loop(ts) {
       if (r.dead) continue;
       r.x -= ROCK_SPEED * dt;
 
-      // Player en pantalla
       const center = Math.min(Math.max(player.x, viewport.clientWidth/2), LEVEL_WIDTH - viewport.clientWidth/2);
       const offset = -center + viewport.clientWidth/2;
       const pScreen = { x: player.x + offset, y: player.y, width: player.width*(player.big?1.45:1), height: player.height*(player.big?1.45:1) };
       const rRect   = { x: r.x, y: 0, width: r.width, height: r.height };
 
-      // Colisión
       const overlap = aabb(pScreen, rRect);
 
       if (overlap) {
@@ -330,7 +323,6 @@ function loop(ts) {
         }
       }
 
-      // Respawn con separación mínima
       if (r.x < -140 && !r.dead) {
         let lastX = viewport.clientWidth;
         for (const o of runnerRocks) if (o!==r && !o.dead && o.x>lastX) lastX = o.x;
@@ -341,9 +333,9 @@ function loop(ts) {
     }
   }
 
-  /* Render (anclado al suelo) */
+  // Render
   playerEl.style.left = player.x + 'px';
-  playerEl.style.bottom = Math.max(player.y, GROUND_Y) + 'px'; /* <- nunca por debajo del suelo */
+  playerEl.style.bottom = Math.max(player.y, GROUND_Y) + 'px';
 
   for (const b of blocks) b.el.style.bottom = b.y + 'px';
 
