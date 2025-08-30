@@ -11,13 +11,13 @@ const gameOverTitle = document.getElementById('gameOverTitle');
 const retryBtn = document.getElementById('retryBtn');
 const honeyHUD = document.getElementById('honeyHUD');
 
-// Config (más fácil)
+// Config
 const LEVEL_WIDTH = 12000;
 const GROUND_Y = 0;
-const GRAVITY = 1850;     // caída más suave
+const GRAVITY = 1850;
 const RUN_SPEED = 100;
-const JUMP_VELOCITY = 800; // salto más alto = más margen
-const ROCK_SPEED = 90;     // rocas más lentas
+const JUMP_VELOCITY = 800;
+const ROCK_SPEED = 90; // más lentas
 const PARALLAX_FACTOR = 0.3;
 
 // Player
@@ -35,7 +35,7 @@ function elem(tag, className, style={}) {
   return el;
 }
 
-// Level: blocks + cave
+// Level
 const blocks = [];
 const items  = [];
 function placeBlock(x) {
@@ -50,15 +50,13 @@ function placeHoney(x,y) {
   items.push(it);
   return it;
 }
-
-// Bloques a lo largo del nivel
 for (let x=500; x<LEVEL_WIDTH-800; x+=900) placeBlock(x);
 
-// Cueva (meta)
+// Cueva
 const caveX = LEVEL_WIDTH - 300;
 caveEl.style.left = caveX + 'px';
 
-// Rocas "runner": capa de pantalla (70x70)
+// Rocas runner
 const runnerRocks = [];
 function spawnRock(x) {
   const el = elem('div','runner-rock',{ left:x+'px' });
@@ -91,7 +89,6 @@ document.addEventListener('keyup', e => {
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
   if (e.code === 'Space') keys.jump = false;
 });
-
 retryBtn.addEventListener('click', () => location.reload());
 
 // Helpers
@@ -103,7 +100,7 @@ function playerRect(){
 }
 function setHUDActive(active){ honeyHUD.classList.toggle('active', !!active); }
 
-// Game loop
+// Loop
 let last = 0, running = true;
 function loop(ts) {
   if (!last) last = ts;
@@ -185,7 +182,7 @@ function loop(ts) {
   playerEl.style.bottom = player.y + 'px';
   for (const b of blocks) b.el.style.bottom = b.y + 'px';
 
-  // Win
+  // Meta
   const caveRect = { x: caveX, y: 0, width: 180, height: 160 };
   if (aabb(playerRect(), caveRect)) { running = false; gameOverTitle.textContent = '¡Llegaste a tu cueva! 🥳'; gameOverOverlay.classList.add('visible'); }
 
