@@ -59,25 +59,24 @@ body { font-family: system-ui, -apple-system, Arial, sans-serif; background:#eaf
 /* Entities */
 .player, .block, .honey, .cave { position:absolute; background-size:contain; background-repeat:no-repeat; background-position:bottom center; }
 
-/* Oso: anclado al suelo */
+/* Oso: pies en el suelo */
 .player {
   width:90px; height:90px; left:120px; bottom:0;
   background-image:url("img/Oso.png");
   transition: transform .08s linear;
-  transform-origin: bottom center; /* ← mantiene los pies en el suelo al escalar */
+  transform-origin: bottom center;
 }
 .player.big { transform: scale(1.45); }
 .player.facing-left { transform: scaleX(-1); }
 .player.facing-left.big { transform: scale(-1, 1.45); }
 
-/* Espada (con fallback png si cambias la imagen en el servidor) */
+/* Espada */
 .player { position: relative; }
 .player .sword {
   position:absolute;
   width:82px; height:82px;
   bottom:28px; left:66px;
-  background: center/contain no-repeat;
-  background-image:url("img/Espada.gif");
+  background: url("img/Espada.gif") center/contain no-repeat;
   opacity:0; transform: translateY(6px) rotate(12deg);
   transition: opacity .06s ease, transform .06s ease;
   pointer-events:none;
