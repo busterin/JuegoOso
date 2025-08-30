@@ -1,4 +1,22 @@
-// Elements
+/***** PANTALLA INICIO -> JUEGO *****/
+const homeScreen = document.getElementById('homeScreen');
+const gameScreen = document.getElementById('gameScreen');
+const playBtn = document.getElementById('playBtn');
+const backHomeBtn = document.getElementById('backHomeBtn');
+const retryBtn = document.getElementById('retryBtn');
+
+let running = false; // El juego no corre hasta pulsar JUGAR
+
+function startGame() {
+  homeScreen.style.display = 'none';
+  gameScreen.style.display = 'block';
+  running = true;
+}
+playBtn.addEventListener('click', startGame);
+backHomeBtn.addEventListener('click', () => location.reload());
+retryBtn.addEventListener('click', () => location.reload());
+
+/***** ELEMENTOS DEL JUEGO *****/
 const viewport = document.getElementById('viewport');
 const world = document.getElementById('world');
 const playerEl = document.getElementById('player');
@@ -6,14 +24,11 @@ const blocksEl = document.getElementById('blocks');
 const itemsEl = document.getElementById('items');
 const caveEl = document.getElementById('cave');
 const runnerRocksEl = document.getElementById('runnerRocks');
-const startOverlay = document.getElementById('startOverlay');
-const startBtn = document.getElementById('startBtn');
 const gameOverOverlay = document.getElementById('gameOverOverlay');
 const gameOverTitle = document.getElementById('gameOverTitle');
-const retryBtn = document.getElementById('retryBtn');
 const honeyHUD = document.getElementById('honeyHUD');
 
-// Configuración básica
+/***** CONFIGURACIÓN *****/
 const LEVEL_WIDTH = 12000;
 const GROUND_Y = 0;
 const GRAVITY = 1850;
@@ -24,41 +39,34 @@ const PARALLAX_FACTOR = 0.3;
 
 // Salto hacia delante
 const JUMP_FORWARD_SPEED = 210;
-const JUMP_BOOST_TIME   = 380; 
+const JUMP_BOOST_TIME   = 380;
 const AIR_ACCEL         = 650;
 const MAX_AIR_SPEED     = 220;
 const AIR_DRIFT_MIN     = 130;
 
-// Ataque con espada
-const ATTACK_DURATION  = 180;  
-const ATTACK_COOLDOWN  = 320;  
-const ATTACK_RANGE_X   = 110;  
-const ATTACK_RANGE_Y   = 90;   
+// Espada
+const ATTACK_DURATION  = 180;
+const ATTACK_COOLDOWN  = 320;
+const ATTACK_RANGE_X   = 110;
+const ATTACK_RANGE_Y   = 90;
 
-// Spawning de rocas (nunca juntas)
+// Rocas (separación)
 const ROCK_MIN_GAP       = 480;
 const ROCK_RESPAWN_BASE  = 220;
 const ROCK_RESPAWN_RAND  = 520;
 
-// Player
-const player = {
-  x:120, y:GROUND_Y, vx:0, vy:0,
-  width:90, height:90,
-  onGround:true, big:false, facing:1
-};
-
-// Estado
+/***** ESTADO *****/
+const player = { x:120, y:GROUND_Y, vx:0, vy:0, width:90, height:90, onGround:true, big:false, facing:1 };
 let jumpBoostUntil = 0;
 let isAttacking = false;
 let attackUntil = 0;
 let nextAttackTime = 0;
 let last = 0;
-let running = false; 
 
-// Añadir espada dentro del oso
-const swordEl = document.querySelector('.sword');
+// Espada ya existe en el HTML como .sword hijo de #player
+const swordEl = playerEl.querySelector('.sword');
 
-// Utils
+/***** UTILS *****/
 function elem(tag, className, style={}) {
   const el = document.createElement(tag);
   if (className) el.className = className;
@@ -73,7 +81,7 @@ function playerRect(){
 }
 function setHUDActive(active){ honeyHUD?.classList.toggle('active', !!active); }
 
-// Level
+/***** NIVEL *****/
 const blocks = [];
 const items  = [];
 function placeBlock(x) {
@@ -90,11 +98,11 @@ function placeHoney(x,y) {
 }
 for (let x=500; x<LEVEL_WIDTH-800; x+=900) placeBlock(x);
 
-// Cueva
+// Meta
 const caveX = LEVEL_WIDTH - 300;
 caveEl.style.left = caveX + 'px';
 
-// Rocas
+/***** ROCAS *****/
 const runnerRocks = [];
 function spawnRock(x) {
   const el = elem('div','runner-rock',{ left:x+'px' });
@@ -109,7 +117,7 @@ function spawnRock(x) {
   spawnRock(base + 2*(ROCK_MIN_GAP + 320));
 })();
 
-// Cámara + Parallax
+/***** CÁMARA + PARALLAX *****/
 function updateCamera() {
   const center = Math.min(Math.max(player.x, viewport.clientWidth/2), LEVEL_WIDTH - viewport.clientWidth/2);
   const offset = -center + viewport.clientWidth/2;
@@ -118,17 +126,13 @@ function updateCamera() {
   viewport.style.backgroundPosition = `${parallaxX}px 0px`;
 }
 
-// Input
+/***** INPUT *****/
 const keys = { left:false, right:false, jump:false, attack:false };
 document.addEventListener('keydown', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
   if (e.code === 'Space') keys.jump = true;
   if (e.code === 'KeyS') keys.attack = true;
-
-  if ((e.code === 'Enter' || e.code === 'Space') && startOverlay?.classList.contains('visible')) {
-    e.preventDefault(); startGame();
-  }
 });
 document.addEventListener('keyup', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
@@ -136,17 +140,8 @@ document.addEventListener('keyup', e => {
   if (e.code === 'Space') keys.jump = false;
   if (e.code === 'KeyS') keys.attack = false;
 });
-startBtn?.addEventListener('click', startGame);
-retryBtn.addEventListener('click', () => location.reload());
 
-// Inicio del juego
-function startGame(){
-  startOverlay?.classList.remove('visible');
-  gameOverOverlay?.classList.remove('visible');
-  running = true;
-}
-
-// Ataque
+/***** ATAQUE *****/
 function tryStartAttack(ts){
   if (isAttacking) return;
   if (ts < nextAttackTime) return;
@@ -155,34 +150,22 @@ function tryStartAttack(ts){
   nextAttackTime = ts + ATTACK_COOLDOWN;
   playerEl.classList.add('attacking');
 }
-
-// Hitbox de espada
 function getAttackRect(pScreen){
   if (player.facing > 0) {
-    return {
-      x: pScreen.x + pScreen.width - 6,
-      y: pScreen.y,
-      width: ATTACK_RANGE_X,
-      height: ATTACK_RANGE_Y
-    };
+    return { x: pScreen.x + pScreen.width - 6, y: pScreen.y, width: ATTACK_RANGE_X, height: ATTACK_RANGE_Y };
   } else {
-    return {
-      x: pScreen.x - ATTACK_RANGE_X + 6,
-      y: pScreen.y,
-      width: ATTACK_RANGE_X,
-      height: ATTACK_RANGE_Y
-    };
+    return { x: pScreen.x - ATTACK_RANGE_X + 6, y: pScreen.y, width: ATTACK_RANGE_X, height: ATTACK_RANGE_Y };
   }
 }
 
-// Loop
+/***** BUCLE *****/
 function loop(ts) {
   if (!last) last = ts;
   const dt = Math.min((ts-last)/1000, 0.033);
   last = ts;
 
   if (running) {
-    // Movimiento
+    // Movimiento horizontal
     let targetVx = 0;
     if (keys.left)  targetVx -= RUN_SPEED;
     if (keys.right) targetVx += RUN_SPEED;
@@ -200,10 +183,7 @@ function loop(ts) {
 
     // Ataque
     if (keys.attack) tryStartAttack(ts);
-    if (isAttacking && ts > attackUntil) {
-      isAttacking = false;
-      playerEl.classList.remove('attacking');
-    }
+    if (isAttacking && ts > attackUntil) { isAttacking = false; playerEl.classList.remove('attacking'); }
 
     // Control suelo/aire
     if (player.onGround) {
@@ -228,7 +208,7 @@ function loop(ts) {
       if (player.vx < -MAX_AIR_SPEED) player.vx = -MAX_AIR_SPEED;
     }
 
-    // Física
+    // Física básica
     player.vy -= GRAVITY * dt;
     player.x  += player.vx * dt;
     player.y  += player.vy * dt;
@@ -249,7 +229,7 @@ function loop(ts) {
       }
     }
 
-    // Panal
+    // Panal: cae y pickup -> vida extra
     for (const it of items) {
       if (it.taken) continue;
       if (!it.onGround) {
@@ -265,7 +245,7 @@ function loop(ts) {
       if (it.el) { it.el.style.left = it.x + 'px'; it.el.style.bottom = it.y + 'px'; }
     }
 
-    // Rocas
+    // Rocas: movimiento, ataque, respawn espaciado
     for (const r of runnerRocks) {
       if (r.dead) continue;
       r.x -= ROCK_SPEED * dt;
@@ -300,7 +280,7 @@ function loop(ts) {
         }
       }
 
-      // Respawn automático
+      // Respawn automático con separación mínima
       if (r.x < -140 && !r.dead) {
         let lastX = viewport.clientWidth;
         for (const o of runnerRocks) if (o!==r && !o.dead && o.x>lastX) lastX = o.x;
