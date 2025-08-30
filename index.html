@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Juego Oso</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body class="centered">
   <main>
@@ -19,22 +19,15 @@
           </div>
         </div>
 
-        <div class="world" id="world" aria-hidden="true">
+        <div class="world" id="world">
           <div id="player" class="player"></div>
           <div id="cave" class="cave"></div>
           <div id="blocks"></div>
           <div id="items"></div>
         </div>
-        <div id="runnerRocks"></div>
 
-        <!-- Overlay inicio -->
-        <div id="startOverlay" class="overlay visible" role="dialog" aria-modal="true">
-          <div class="overlay-box">
-            <h2>¿Listo?</h2>
-            <button id="startBtn" class="btn primary" autofocus>JUGAR</button>
-            <p class="hint">Mover: <b>A/D</b> o <b>←/→</b>.  Saltar: <b>ESPACIO</b>.</p>
-          </div>
-        </div>
+        <!-- Rocas que cruzan la pantalla -->
+        <div id="runnerRocks"></div>
 
         <!-- Overlay fin -->
         <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true">
