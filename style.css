@@ -1,4 +1,4 @@
-/* --- Base y layout --- */
+/* --- Base and layout --- */
 * { box-sizing: border-box; }
 html, body { height: 100%; margin:0; }
 body {
@@ -44,14 +44,13 @@ body {
 .btn.primary { background: #2ecc71; border-color: #2ecc71; color: #fff; box-shadow: 0 4px 0 #239d57; }
 .btn.ghost { background: transparent; }
 
-/* --- Área de juego (viewport) con PARALLAX --- */
+/* --- Game area --- */
 .game-wrapper { display: flex; align-items: center; justify-content: center; width: 100%; }
 .game {
   position: relative;
   width: min(1100px, 95vw);
   height: 520px;
-  background: url("img/Fondo.jpg") repeat-x bottom;
-  background-size: auto 100%;
+  background: url("img/Fondo.jpg") center/cover no-repeat;
   border: 3px solid #333;
   border-radius: 12px;
   overflow: hidden;
@@ -64,57 +63,48 @@ body {
   height: 100%;
   transform: translateX(0);
   will-change: transform;
-  pointer-events: none; /* no tapa el overlay */
+  pointer-events: none;
 }
 
-/* --- Entidades --- */
-.player, .rock, .block, .honey, .cave {
+/* Entities */
+.player, .block, .honey, .cave {
   position: absolute;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
 }
 
-/* Jugador: tocando el borde inferior del recuadro */
 .player {
   width: 60px; height: 60px;
   left: 120px;
-  bottom: 0; /* toca el fondo */
+  bottom: 0;
   background-image: url("img/Oso.png");
   transition: transform .08s linear;
 }
 .player.big { transform: scale(1.25); }
 
-/* Bloques a altura alcanzable */
 .block {
   width: 60px; height: 60px;
-  bottom: 120px; /* ~altura de salto para poder romperlos */
+  bottom: 120px;
   background-image: url("img/Bloque.png");
 }
 .block.broken { opacity: 0.35; filter: grayscale(0.8); }
 
-/* Panal (tarro) */
 .honey {
   width: 48px; height: 48px;
   background-image: url("img/Panal.png");
 }
 
-/* Cueva (meta) al final del mundo */
 .cave {
   width: 160px; height: 140px;
   bottom: 0;
   background-image: url("img/Cueva.png");
 }
 
-/* Rocas runner (capa independiente que atraviesa el viewport) */
-#runnerRocks {
-  position: absolute; inset: 0;
-  pointer-events: none;
-}
+/* Runner rocks */
+#runnerRocks { position: absolute; inset: 0; pointer-events: none; }
 .runner-rock {
-  position: absolute;
-  bottom: 0; /* sobre el fondo, tocando suelo */
-  width: 60px; height: 60px;
+  position: absolute; bottom: 0; width: 60px; height: 60px;
   background-image: url("img/Roca.png");
   background-size: contain; background-repeat: no-repeat; background-position: bottom center;
 }
@@ -124,8 +114,7 @@ body {
   position: absolute; inset: 0;
   display: none; align-items: center; justify-content: center;
   background: rgba(0,0,0,.35);
-  z-index: 999;
-  pointer-events: auto;
+  z-index: 999; pointer-events: auto;
 }
 .overlay.visible { display: flex; }
 .overlay-box {
