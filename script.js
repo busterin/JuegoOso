@@ -9,25 +9,23 @@ let running = false;   // no corre hasta pulsar JUGAR
 let started = false;   // para evitar re-inicializaciones dobles
 
 function startGame() {
-  // Mostrar juego primero para que viewport tenga ancho real
+  // Mostrar juego primero (viewport tendrá ancho real)
   homeScreen.style.display = 'none';
   gameScreen.style.display = 'block';
 
-  // Inicializar todo solo la primera vez
   if (!started) {
     initLevel();
     spawnInitialRocks();
     started = true;
   } else {
-    // Reinicio rápido de estado al volver a jugar sin recargar
     resetState();
     spawnInitialRocks(true);
   }
   running = true;
 }
 playBtn.addEventListener('click', startGame);
-backHomeBtn.addEventListener('click', () => location.reload());
-retryBtn.addEventListener('click', () => location.reload());
+backHomeBtn?.addEventListener('click', () => location.reload());
+retryBtn?.addEventListener('click', () => location.reload());
 
 /***** ELEMENTOS DEL JUEGO *****/
 const viewport = document.getElementById('viewport');
@@ -43,7 +41,7 @@ const honeyHUD = document.getElementById('honeyHUD');
 
 /***** CONFIGURACIÓN *****/
 const LEVEL_WIDTH = 12000;
-const GROUND_Y = 0;
+const GROUND_Y = 0;           // 0 = pegado al suelo del recuadro
 const GRAVITY = 1850;
 const RUN_SPEED = 100;
 const JUMP_VELOCITY = 840;
@@ -76,8 +74,17 @@ let attackUntil = 0;
 let nextAttackTime = 0;
 let last = 0;
 
-// Espada ya existe en el HTML como .sword hijo de #player
+// Espada (y fallback si el GIF no existe)
 const swordEl = playerEl.querySelector('.sword');
+(function ensureSwordImage(){
+  const test = new Image();
+  test.onload = () => { /* ok gif */ };
+  test.onerror = () => {
+    // Cambiar a PNG si el GIF no está
+    swordEl.style.backgroundImage = 'url("img/Espada.png")';
+  };
+  test.src = 'img/Espada.gif';
+})();
 
 /***** UTILS *****/
 function elem(tag, className, style={}) {
@@ -98,20 +105,22 @@ function setHUDActive(active){ honeyHUD?.classList.toggle('active', !!active); }
 let blocks = [];
 let items  = [];
 function initLevel() {
-  // Limpiar por si acaso
   blocksEl.innerHTML = '';
   itemsEl.innerHTML = '';
   blocks = [];
   items = [];
 
-  // Bloques cada ~900px
   for (let x=500; x<LEVEL_WIDTH-800; x+=900) placeBlock(x);
 
-  // Cueva (meta)
   const caveX = LEVEL_WIDTH - 300;
   caveEl.style.left = caveX + 'px';
-  // Guardamos en elemento para win-check
   caveEl.dataset.x = caveX;
+
+  // Aseguramos oso en el suelo al iniciar
+  player.x = 120; player.y = GROUND_Y; player.vx = 0; player.vy = 0;
+  player.onGround = true; player.facing = 1; player.big = false;
+  playerEl.className = 'player';
+  setHUDActive(false);
 }
 function placeBlock(x) {
   const el = elem('div','block',{ left:x+'px' });
@@ -138,9 +147,8 @@ function spawnRock(x) {
   const r = { x, y:0, width:70, height:70, el, dead:false };
   runnerRocks.push(r);
 }
-function spawnInitialRocks(reset=false){
+function spawnInitialRocks(){
   clearRocks();
-  // medir ancho real del viewport (ya visible)
   const vw = viewport.clientWidth || Math.min(1100, window.innerWidth || 1100);
   const base = vw + 220;
   spawnRock(base);
@@ -178,7 +186,7 @@ function tryStartAttack(ts){
   isAttacking = true;
   attackUntil = ts + ATTACK_DURATION;
   nextAttackTime = ts + ATTACK_COOLDOWN;
-  playerEl.classList.add('attacking');
+  playerEl.classList.add('attacking'); // <- muestra la espada
 }
 function getAttackRect(pScreen){
   if (player.facing > 0) {
@@ -192,7 +200,7 @@ function getAttackRect(pScreen){
 function resetState(){
   player.x=120; player.y=GROUND_Y; player.vx=0; player.vy=0;
   player.onGround=true; player.big=false; player.facing=1;
-  playerEl.classList.remove('big','facing-left','attacking');
+  playerEl.className = 'player';
   setHUDActive(false);
   jumpBoostUntil = 0;
   isAttacking = false; attackUntil = 0; nextAttackTime = 0;
@@ -253,9 +261,11 @@ function loop(ts) {
     player.vy -= GRAVITY * dt;
     player.x  += player.vx * dt;
     player.y  += player.vy * dt;
+
+    // Clamp suelo (por si acaso): evita “flotar”
+    if (player.y < GROUND_Y) { player.y = GROUND_Y; player.vy = 0; player.onGround = true; }
     if (player.x < 0) player.x = 0;
     if (player.x > LEVEL_WIDTH - player.width) player.x = LEVEL_WIDTH - player.width;
-    if (player.y < GROUND_Y) { player.y = GROUND_Y; player.vy = 0; player.onGround = true; }
 
     // Bloques -> panal
     const pR = playerRect();
@@ -286,7 +296,7 @@ function loop(ts) {
       if (it.el) { it.el.style.left = it.x + 'px'; it.el.style.bottom = it.y + 'px'; }
     }
 
-    // Rocas: mover, ataque, respawn espaciado
+    // Rocas
     for (const r of runnerRocks) {
       if (r.dead) continue;
       r.x -= ROCK_SPEED * dt;
@@ -302,7 +312,6 @@ function loop(ts) {
 
       if (overlap) {
         if (isAttacking) {
-          // Hitbox de espada
           const aRect = getAttackRect(pScreen);
           if (aabb(aRect, rRect)) {
             r.dead = true; r.el.style.opacity = '0'; r.x = -999;
@@ -315,14 +324,13 @@ function loop(ts) {
             }, 200);
           }
         } else {
-          // Daño normal
           if (player.big) { player.big = false; playerEl.classList.remove('big'); setHUDActive(false); }
           else { running = false; gameOverTitle.textContent = '¡Ay! Te golpeó una roca'; gameOverOverlay.classList.add('visible'); }
           r.x = -120;
         }
       }
 
-      // Respawn automático con separación mínima
+      // Respawn con separación mínima
       if (r.x < -140 && !r.dead) {
         let lastX = viewport.clientWidth;
         for (const o of runnerRocks) if (o!==r && !o.dead && o.x>lastX) lastX = o.x;
@@ -333,13 +341,14 @@ function loop(ts) {
     }
   }
 
-  // Render
+  /* Render (anclado al suelo) */
   playerEl.style.left = player.x + 'px';
-  playerEl.style.bottom = player.y + 'px';
+  playerEl.style.bottom = Math.max(player.y, GROUND_Y) + 'px'; /* <- nunca por debajo del suelo */
+
   for (const b of blocks) b.el.style.bottom = b.y + 'px';
 
   // Meta
-  const caveRect = { x: Number(caveEl.dataset.x)|| (LEVEL_WIDTH-300), y: 0, width: 180, height: 160 };
+  const caveRect = { x: Number(caveEl.dataset.x)||(LEVEL_WIDTH-300), y: 0, width: 180, height: 160 };
   if (aabb(playerRect(), caveRect)) {
     running = false;
     gameOverTitle.textContent = '¡Llegaste a tu cueva! 🥳';
