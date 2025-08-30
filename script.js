@@ -6,6 +6,8 @@ const blocksEl = document.getElementById('blocks');
 const itemsEl = document.getElementById('items');
 const caveEl = document.getElementById('cave');
 const runnerRocksEl = document.getElementById('runnerRocks');
+const startOverlay = document.getElementById('startOverlay');
+const startBtn = document.getElementById('startBtn');
 const gameOverOverlay = document.getElementById('gameOverOverlay');
 const gameOverTitle = document.getElementById('gameOverTitle');
 const retryBtn = document.getElementById('retryBtn');
@@ -17,8 +19,13 @@ const GROUND_Y = 0;
 const GRAVITY = 1850;
 const RUN_SPEED = 100;
 const JUMP_VELOCITY = 800;
-const ROCK_SPEED = 90; // más lentas
+const ROCK_SPEED = 90;
 const PARALLAX_FACTOR = 0.3;
+
+// Salto hacia adelante (nuevo)
+const JUMP_FORWARD_BOOST = 180; // impulso horizontal inicial al saltar
+const AIR_ACCEL = 600;          // aceleración en el aire al mantener A/D o ←/→
+const MAX_AIR_SPEED = 160;      // tope de velocidad horizontal en el aire
 
 // Player
 const player = { 
@@ -56,7 +63,7 @@ for (let x=500; x<LEVEL_WIDTH-800; x+=900) placeBlock(x);
 const caveX = LEVEL_WIDTH - 300;
 caveEl.style.left = caveX + 'px';
 
-// Rocas runner
+// Rocas runner (70x70 en CSS)
 const runnerRocks = [];
 function spawnRock(x) {
   const el = elem('div','runner-rock',{ left:x+'px' });
@@ -83,12 +90,18 @@ document.addEventListener('keydown', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
   if (e.code === 'Space') keys.jump = true;
+
+  // Iniciar desde overlay con Enter/Espacio
+  if ((e.code === 'Enter' || e.code === 'Space') && startOverlay?.classList.contains('visible')) {
+    e.preventDefault(); startGame();
+  }
 });
 document.addEventListener('keyup', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
   if (e.code === 'Space') keys.jump = false;
 });
+startBtn?.addEventListener('click', startGame);
 retryBtn.addEventListener('click', () => location.reload());
 
 // Helpers
@@ -100,34 +113,70 @@ function playerRect(){
 }
 function setHUDActive(active){ honeyHUD.classList.toggle('active', !!active); }
 
+// Estado
+let last = 0;
+let running = false; // empieza en pausa (overlay visible)
+
+// Juego: iniciar
+function startGame(){
+  startOverlay?.classList.remove('visible');
+  gameOverOverlay?.classList.remove('visible');
+  running = true;
+}
+
 // Loop
-let last = 0, running = true;
 function loop(ts) {
   if (!last) last = ts;
   const dt = Math.min((ts-last)/1000, 0.033);
   last = ts;
 
   if (running) {
-    // Movimiento
-    let vx = 0;
-    if (keys.left) vx -= RUN_SPEED;
-    if (keys.right) vx += RUN_SPEED;
-    player.vx = vx;
-    if (vx !== 0) player.facing = (vx > 0 ? 1 : -1);
+    // Movimiento horizontal en suelo
+    let targetVx = 0;
+    if (keys.left)  targetVx -= RUN_SPEED;
+    if (keys.right) targetVx += RUN_SPEED;
+
+    // Dirección visual
+    if (targetVx !== 0) player.facing = (targetVx > 0 ? 1 : -1);
     playerEl.classList.toggle('facing-left', player.facing < 0);
 
-    // Salto
-    if (keys.jump && player.onGround) { player.vy = JUMP_VELOCITY; player.onGround = false; }
+    // Salto (con impulso hacia adelante)
+    if (keys.jump && player.onGround) {
+      player.vy = JUMP_VELOCITY;
+      player.onGround = false;
+      // impulso horizontal inicial según la dirección actual
+      player.vx = (player.facing > 0)
+        ? Math.max(player.vx, JUMP_FORWARD_BOOST)
+        : Math.min(player.vx, -JUMP_FORWARD_BOOST);
+    }
+
+    // Control en el aire / suelo
+    if (player.onGround) {
+      // en suelo pegamos velocidad objetivo
+      player.vx = targetVx;
+    } else {
+      // en el aire aplicamos aceleración suave hacia el objetivo
+      const desired = (keys.left ? -MAX_AIR_SPEED : 0) + (keys.right ? MAX_AIR_SPEED : 0);
+      if (desired !== 0) {
+        if (desired > player.vx) player.vx = Math.min(player.vx + AIR_ACCEL*dt, desired);
+        if (desired < player.vx) player.vx = Math.max(player.vx - AIR_ACCEL*dt, desired);
+      }
+      // clamp aire
+      if (player.vx >  MAX_AIR_SPEED) player.vx =  MAX_AIR_SPEED;
+      if (player.vx < -MAX_AIR_SPEED) player.vx = -MAX_AIR_SPEED;
+    }
 
     // Física
     player.vy -= GRAVITY * dt;
-    player.x += player.vx * dt;
-    player.y += player.vy * dt;
+    player.x  += player.vx * dt;
+    player.y  += player.vy * dt;
+
+    // Límites
     if (player.x < 0) player.x = 0;
     if (player.x > LEVEL_WIDTH - player.width) player.x = LEVEL_WIDTH - player.width;
     if (player.y < GROUND_Y) { player.y = GROUND_Y; player.vy = 0; player.onGround = true; }
 
-    // Bloques
+    // Bloques: romper por abajo -> cae panal
     const pR = playerRect();
     for (const bl of blocks) {
       const bR = { x: bl.x, y: bl.y, width: bl.width, height: bl.height };
@@ -140,12 +189,12 @@ function loop(ts) {
       }
     }
 
-    // Items
+    // Panal: cae al suelo y al recoger -> power-up
     for (const it of items) {
       if (it.taken) continue;
       if (!it.onGround) {
         it.vy -= GRAVITY * 0.6 * dt;
-        it.y += it.vy * dt;
+        it.y  += it.vy * dt;
         if (it.y < GROUND_Y) { it.y = GROUND_Y; it.vy = 0; it.onGround = true; }
       }
       const iR = { x: it.x, y: it.y, width: it.width, height: it.height };
@@ -156,10 +205,12 @@ function loop(ts) {
       if (it.el) { it.el.style.left = it.x + 'px'; it.el.style.bottom = it.y + 'px'; }
     }
 
-    // Rocas
+    // Rocas: golpe quita power-up o game over
     for (const r of runnerRocks) {
       r.x -= ROCK_SPEED * dt;
       if (r.x < -100) r.x = viewport.clientWidth + Math.random()*600 + 200;
+
+      // Colisión en coordenadas de pantalla
       const center = Math.min(Math.max(player.x, viewport.clientWidth/2), LEVEL_WIDTH - viewport.clientWidth/2);
       const offset = -center + viewport.clientWidth/2;
       const pScreen = { x: player.x + offset, y: player.y, width: player.width*(player.big?1.45:1), height: player.height*(player.big?1.45:1) };
@@ -171,7 +222,7 @@ function loop(ts) {
       if (coll) {
         if (player.big) { player.big = false; playerEl.classList.remove('big'); setHUDActive(false); }
         else { running = false; gameOverTitle.textContent = '¡Ay! Te golpeó una roca'; gameOverOverlay.classList.add('visible'); }
-        r.x = -120;
+        r.x = -120; // evitar doble golpe
       }
       r.el.style.left = r.x + 'px';
     }
