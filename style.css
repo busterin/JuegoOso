@@ -1,58 +1,151 @@
+/* --- Reset base y centrado --- */
+* { box-sizing: border-box; }
 body {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  background: #f0f0f0;
+  margin: 0;
+  font-family: system-ui, -apple-system, Arial, sans-serif;
+  color: #222;
+  background: #f6f7fb;
+}
+.centered {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 
-.game {
-  position: relative;
-  margin: 20px auto;
-  width: 600px;
-  height: 200px;
+.title {
+  margin: 0 0 12px;
+  font-size: 32px;
+  line-height: 1.2;
+  text-align: center;
+}
+.subtitle {
+  margin: 0 0 24px;
+  text-align: center;
+  color: #555;
+}
+
+.btn {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 2px solid #333;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+  box-shadow: 0 4px 0 #333;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #333; }
+.btn.primary { background: #2ecc71; border-color: #2ecc71; color: #fff; box-shadow: 0 4px 0 #239d57; }
+.btn.ghost { background: transparent; }
+
+.start-card {
+  width: min(720px, 90vw);
   background: #fff;
   border: 2px solid #333;
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+/* --- Área de juego más grande y centrada --- */
+.game-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.game {
+  position: relative;
+  width: 900px;   /* más ancho */
+  height: 320px;  /* más alto */
+  background: linear-gradient(#ffffff, #f1f1f1);
+  border: 3px solid #333;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+/* --- Suelo (opcional visual) --- */
+.game::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 6px;
+  background: #8d8d8d;
 }
 
 /* --- JUGADOR (OSO) --- */
 #player {
   position: absolute;
   bottom: 0;
-  left: 50px;
+  left: 80px;       /* más separado del borde para más margen */
   width: 60px;
   height: 60px;
-  background-image: url("Oso.png"); /* coloca Oso.png junto a index.html */
+  background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
+  will-change: transform, bottom;
 }
 
 /* --- OBSTÁCULO (ROCA) --- */
 #obstacle {
   position: absolute;
   bottom: 0;
-  right: -60px;
+  right: -80px;     /* arranca más afuera por suavidad */
   width: 60px;
   height: 60px;
-  background-image: url("Roca.png"); /* coloca Roca.png junto a index.html */
+  background-image: url("img/Roca.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
-  animation: moveObstacle 2s linear infinite;
+  animation: moveObstacle 2.6s linear infinite; /* más lento para facilitar */
+  will-change: right;
 }
 
 @keyframes moveObstacle {
-  from { right: -60px; }
+  from { right: -80px; }
   to { right: 100%; }
 }
 
 /* --- SALTO --- */
-.jump {
-  animation: jump 0.5s ease;
-}
-
+.jump { animation: jump 0.55s ease; }
 @keyframes jump {
   0%   { bottom: 0; }
-  50%  { bottom: 90px; }
+  50%  { bottom: 110px; } /* salto más alto para dar más margen */
   100% { bottom: 0; }
 }
+
+/* --- Score --- */
+.score {
+  margin-top: 12px;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* --- Overlays (inicio dentro del juego y game over) --- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.visible { display: flex; }
+.overlay-box {
+  background: #fff;
+  border: 2px solid #333;
+  border-radius: 12px;
+  padding: 24px 28px;
+  width: min(460px, 90%);
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+.overlay-actions { display: flex; gap: 12px; justify-content: center; margin-top: 8px; }
+.hint { color: #666; margin-top: 8px; font-size: 14px; }

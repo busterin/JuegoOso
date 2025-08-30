@@ -1,18 +1,55 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Juego Dinosaurio</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Juego Oso</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <h1>Juego estilo Dinosaurio 🦖</h1>
-  <div class="game">
-    <div id="player"></div>
-    <div id="obstacle"></div>
-  </div>
-  <p id="score">Puntuación: 0</p>
+<body class="centered">
+  <main>
+    <h1 class="title">Juego Oso</h1>
+    <div class="game-wrapper">
+      <div class="game" id="game">
+        <div id="player"></div>
+        <div id="obstacle"></div>
+
+        <!-- Overlay Inicio -->
+        <div id="startOverlay" class="overlay visible">
+          <div class="overlay-box">
+            <h2>¿Listo?</h2>
+            <button id="startBtn" class="btn primary">JUGAR</button>
+            <p class="hint">Pulsa <b>ESPACIO</b> o <b>Enter</b> para empezar.<br/>Salta con <b>ESPACIO</b> o el botón <b>A</b> del mando.</p>
+          </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div id="gameOverOverlay" class="overlay">
+          <div class="overlay-box">
+            <h2>Game Over</h2>
+            <p id="finalScore">Puntuación: 0</p>
+            <p id="bestScore">Mejor: 0</p>
+            <div class="overlay-actions">
+              <button id="retryBtn" class="btn">Jugar de nuevo</button>
+              <a href="inicio.html" class="btn ghost">Inicio</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio -->
+        <audio id="sfxJump" preload="auto">
+          <source src="audio/jump.mp3" type="audio/mpeg" />
+          <source src="audio/jump.ogg" type="audio/ogg" />
+        </audio>
+        <audio id="sfxHit" preload="auto">
+          <source src="audio/hit.mp3" type="audio/mpeg" />
+          <source src="audio/hit.ogg" type="audio/ogg" />
+        </audio>
+      </div>
+    </div>
+    <p id="score" class="score">Puntuación: 0</p>
+  </main>
+
   <script src="script.js"></script>
 </body>
 </html>
