@@ -1,3 +1,7 @@
-Coloca tus imagenes en img/Oso.png y img/Roca.png.
-Coloca efectos de sonido en audio/jump.mp3 (o .ogg) y audio/hit.mp3 (o .ogg).
-Atajos: Enter para iniciar, Espacio para saltar, botón A del mando para saltar.
+Coloca tus imágenes en la carpeta img/:
+
+Oso.png, Roca.png, Bloque.png, Cueva.png, Panal.png, Fondo.jpg
+
+El juego usará Fondo.jpg como fondo del área de juego, Panal.png como power-up.
+
+Abre inicio.html para jugar.
