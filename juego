@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juego Dinosaurio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Juego estilo Dinosaurio 🦖</h1>
+  <div class="game">
+    <div id="player"></div>
+    <div id="obstacle"></div>
+  </div>
+  <p id="score">Puntuación: 0</p>
+  <script src="script.js"></script>
+</body>
+</html>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #f0f0f0;
+}
+
+.game {
+  position: relative;
+  margin: 20px auto;
+  width: 600px;
+  height: 200px;
+  background: #fff;
+  border: 2px solid #333;
+  overflow: hidden;
+}
+
+#player {
+  position: absolute;
+  bottom: 0;
+  left: 50px;
+  width: 40px;
+  height: 40px;
+  background: green;
+}
+
+#obstacle {
+  position: absolute;
+  bottom: 0;
+  right: -40px;
+  width: 40px;
+  height: 40px;
+  background: red;
+  animation: moveObstacle 2s linear infinite;
+}
+
+@keyframes moveObstacle {
+  from { right: -40px; }
+  to { right: 100%; }
+}
+
+.jump {
+  animation: jump 0.5s ease;
+}
+
+@keyframes jump {
+  0%   { bottom: 0; }
+  50%  { bottom: 80px; }
+  100% { bottom: 0; }
+}
+const player = document.getElementById("player");
+const obstacle = document.getElementById("obstacle");
+const scoreText = document.getElementById("score");
+
+let isJumping = false;
+let score = 0;
+
+// Manejar salto con la tecla espacio
+document.addEventListener("keydown", function (event) {
+  if (event.code === "Space" && !isJumping) {
+    jump();
+  }
+});
+
+function jump() {
+  isJumping = true;
+  player.classList.add("jump");
+
+  setTimeout(() => {
+    player.classList.remove("jump");
+    isJumping = false;
+  }, 500);
+}
+
+// Detección de colisiones y puntuación
+let gameLoop = setInterval(() => {
+  let playerBottom = parseInt(window.getComputedStyle(player).getPropertyValue("bottom"));
+  let obstacleRight = parseInt(window.getComputedStyle(obstacle).getPropertyValue("right"));
+
+  // El obstáculo está cerca del jugador
+  if (obstacleRight > 510 && obstacleRight < 590 && playerBottom < 40) {
+    alert("¡Game Over! Puntuación final: " + score);
+    score = 0;
+    scoreText.innerText = "Puntuación: " + score;
+  } else {
+    score++;
+    scoreText.innerText = "Puntuación: " + score;
+  }
+}, 100);
