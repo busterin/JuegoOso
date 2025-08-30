@@ -68,17 +68,17 @@ body { font-family: system-ui, -apple-system, Arial, sans-serif; background:#eaf
 .player.facing-left { transform: scaleX(-1); }
 .player.facing-left.big { transform: scale(-1, 1.45); }
 
-/* Bloques a altura alcanzable */
+/* Bloques alcanzables */
 .block { width:60px; height:60px; bottom:130px; background-image:url("img/Bloque.png"); }
 .block.broken { opacity:.35; filter:grayscale(.8); }
 
-/* Panal (cae y se recoge) */
+/* Panal */
 .honey { width:48px; height:48px; background-image:url("img/Panal.png"); }
 
-/* Cueva un poco mayor */
+/* Cueva */
 .cave { width:180px; height:160px; bottom:0; background-image:url("img/Cueva.png"); }
 
-/* Rocas runner: ahora más pequeñas (70x70) que el oso */
+/* Rocas runner (70x70, más pequeñas que el oso) */
 #runnerRocks { position:absolute; inset:0; pointer-events:none; }
 .runner-rock {
   position:absolute; bottom:0; width:70px; height:70px;
