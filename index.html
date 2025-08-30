@@ -1,57 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Juego Oso</title>
+  <title>Juego Oso — Inicio</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body class="centered">
-  <main>
-    <h1 class="title">Juego Oso</h1>
-    <div class="game-wrapper">
-      <div class="game" id="viewport">
-        <!-- HUD -->
-        <div class="hud">
-          <div id="honeyHUD" class="hud-item">
-            <span class="hud-icon"></span>
-            <span class="hud-text">x1</span>
-          </div>
-        </div>
-
-        <div class="world" id="world">
-          <div id="player" class="player"></div>
-          <div id="cave" class="cave"></div>
-          <div id="blocks"></div>
-          <div id="items"></div>
-        </div>
-
-        <!-- Rocas que cruzan la pantalla -->
-        <div id="runnerRocks"></div>
-
-        <!-- Overlay inicio dentro del juego (por si entras directo) -->
-        <div id="startOverlay" class="overlay visible" role="dialog" aria-modal="true">
-          <div class="overlay-box">
-            <h2>¿Listo?</h2>
-            <button id="startBtn" class="btn primary" autofocus>JUGAR</button>
-            <p class="hint">Mover: <b>A/D</b> o <b>←/→</b> · Saltar: <b>ESPACIO</b></p>
-          </div>
-        </div>
-
-        <!-- Overlay fin -->
-        <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true">
-          <div class="overlay-box">
-            <h2 id="gameOverTitle">Game Over</h2>
-            <div class="overlay-actions">
-              <button id="retryBtn" class="btn">Jugar de nuevo</button>
-              <a href="index.html" class="btn ghost">Inicio</a>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </main>
-  <script src="script.js"></script>
+  <div class="start-card">
+    <h1 class="title">Juego Oso 🐻</h1>
+    <p class="subtitle">Muévete con A/D o ←/→ · Salta con ESPACIO · Ataca con S</p>
+    <a class="btn primary" href="juego.html">JUGAR</a>
+  </div>
 </body>
 </html>
