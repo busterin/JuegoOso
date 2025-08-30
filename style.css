@@ -1,0 +1,58 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #f0f0f0;
+}
+
+.game {
+  position: relative;
+  margin: 20px auto;
+  width: 600px;
+  height: 200px;
+  background: #fff;
+  border: 2px solid #333;
+  overflow: hidden;
+}
+
+/* --- JUGADOR (OSO) --- */
+#player {
+  position: absolute;
+  bottom: 0;
+  left: 50px;
+  width: 60px;
+  height: 60px;
+  background-image: url("Oso.png"); /* coloca Oso.png junto a index.html */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: bottom center;
+}
+
+/* --- OBSTÁCULO (ROCA) --- */
+#obstacle {
+  position: absolute;
+  bottom: 0;
+  right: -60px;
+  width: 60px;
+  height: 60px;
+  background-image: url("Roca.png"); /* coloca Roca.png junto a index.html */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: bottom center;
+  animation: moveObstacle 2s linear infinite;
+}
+
+@keyframes moveObstacle {
+  from { right: -60px; }
+  to { right: 100%; }
+}
+
+/* --- SALTO --- */
+.jump {
+  animation: jump 0.5s ease;
+}
+
+@keyframes jump {
+  0%   { bottom: 0; }
+  50%  { bottom: 90px; }
+  100% { bottom: 0; }
+}
