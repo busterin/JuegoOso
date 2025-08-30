@@ -22,10 +22,11 @@ const JUMP_VELOCITY = 800;
 const ROCK_SPEED = 90;
 const PARALLAX_FACTOR = 0.3;
 
-// Salto hacia adelante (nuevo)
-const JUMP_FORWARD_BOOST = 180; // impulso horizontal inicial al saltar
-const AIR_ACCEL = 600;          // aceleración en el aire al mantener A/D o ←/→
-const MAX_AIR_SPEED = 160;      // tope de velocidad horizontal en el aire
+// Salto hacia adelante (mejorado)
+const JUMP_FORWARD_SPEED = 180;   // velocidad horizontal objetivo al despegar
+const JUMP_BOOST_TIME   = 200;    // ms durante los que se mantiene mínimo avance
+const AIR_ACCEL         = 600;    // aceleración en el aire con A/D o ←/→
+const MAX_AIR_SPEED     = 200;    // tope de velocidad horizontal en el aire
 
 // Player
 const player = { 
@@ -33,6 +34,9 @@ const player = {
   width:90, height:90,
   onGround:true, big:false, facing:1
 };
+
+// Estado boost
+let jumpBoostUntil = 0; // timestamp (ms) hasta el que se asegura avance mínimo
 
 // Utils
 function elem(tag, className, style={}) {
@@ -91,7 +95,6 @@ document.addEventListener('keydown', e => {
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
   if (e.code === 'Space') keys.jump = true;
 
-  // Iniciar desde overlay con Enter/Espacio
   if ((e.code === 'Enter' || e.code === 'Space') && startOverlay?.classList.contains('visible')) {
     e.preventDefault(); startGame();
   }
@@ -111,13 +114,12 @@ function playerRect(){
   const h = player.height * (player.big?1.45:1); 
   return { x:player.x, y:player.y, width:w, height:h }; 
 }
-function setHUDActive(active){ honeyHUD.classList.toggle('active', !!active); }
+function setHUDActive(active){ honeyHUD?.classList.toggle('active', !!active); }
 
 // Estado
 let last = 0;
-let running = false; // empieza en pausa (overlay visible)
+let running = false; // empieza en pausa
 
-// Juego: iniciar
 function startGame(){
   startOverlay?.classList.remove('visible');
   gameOverOverlay?.classList.remove('visible');
@@ -131,37 +133,44 @@ function loop(ts) {
   last = ts;
 
   if (running) {
-    // Movimiento horizontal en suelo
+    // Entrada horizontal deseada
     let targetVx = 0;
     if (keys.left)  targetVx -= RUN_SPEED;
     if (keys.right) targetVx += RUN_SPEED;
 
-    // Dirección visual
+    // Actualiza facing
     if (targetVx !== 0) player.facing = (targetVx > 0 ? 1 : -1);
     playerEl.classList.toggle('facing-left', player.facing < 0);
 
-    // Salto (con impulso hacia adelante)
+    // Salto con impulso persistente
     if (keys.jump && player.onGround) {
       player.vy = JUMP_VELOCITY;
       player.onGround = false;
-      // impulso horizontal inicial según la dirección actual
-      player.vx = (player.facing > 0)
-        ? Math.max(player.vx, JUMP_FORWARD_BOOST)
-        : Math.min(player.vx, -JUMP_FORWARD_BOOST);
+      // set velocidad inicial hacia el frente según facing
+      player.vx = (player.facing > 0) ? Math.max(player.vx,  JUMP_FORWARD_SPEED)
+                                      : Math.min(player.vx, -JUMP_FORWARD_SPEED);
+      // durante un tiempo mínimo, garantizar avance
+      jumpBoostUntil = ts + JUMP_BOOST_TIME;
     }
 
-    // Control en el aire / suelo
+    // Control suelo/aire
     if (player.onGround) {
-      // en suelo pegamos velocidad objetivo
+      // en suelo: seguir input directo
       player.vx = targetVx;
     } else {
-      // en el aire aplicamos aceleración suave hacia el objetivo
+      // en aire: mantener impulso mínimo durante la ventana de boost
+      if (ts < jumpBoostUntil) {
+        const minV = (player.facing > 0) ?  JUMP_FORWARD_SPEED : -JUMP_FORWARD_SPEED;
+        if (player.facing > 0) player.vx = Math.max(player.vx, minV);
+        else                   player.vx = Math.min(player.vx, minV);
+      }
+      // además, permitir ajustar con input (A/D) suavemente
       const desired = (keys.left ? -MAX_AIR_SPEED : 0) + (keys.right ? MAX_AIR_SPEED : 0);
       if (desired !== 0) {
         if (desired > player.vx) player.vx = Math.min(player.vx + AIR_ACCEL*dt, desired);
         if (desired < player.vx) player.vx = Math.max(player.vx - AIR_ACCEL*dt, desired);
       }
-      // clamp aire
+      // clamp
       if (player.vx >  MAX_AIR_SPEED) player.vx =  MAX_AIR_SPEED;
       if (player.vx < -MAX_AIR_SPEED) player.vx = -MAX_AIR_SPEED;
     }
@@ -176,7 +185,7 @@ function loop(ts) {
     if (player.x > LEVEL_WIDTH - player.width) player.x = LEVEL_WIDTH - player.width;
     if (player.y < GROUND_Y) { player.y = GROUND_Y; player.vy = 0; player.onGround = true; }
 
-    // Bloques: romper por abajo -> cae panal
+    // Bloques -> panal
     const pR = playerRect();
     for (const bl of blocks) {
       const bR = { x: bl.x, y: bl.y, width: bl.width, height: bl.height };
@@ -189,7 +198,7 @@ function loop(ts) {
       }
     }
 
-    // Panal: cae al suelo y al recoger -> power-up
+    // Panal: cae y al recoger -> power-up
     for (const it of items) {
       if (it.taken) continue;
       if (!it.onGround) {
@@ -205,7 +214,7 @@ function loop(ts) {
       if (it.el) { it.el.style.left = it.x + 'px'; it.el.style.bottom = it.y + 'px'; }
     }
 
-    // Rocas: golpe quita power-up o game over
+    // Rocas
     for (const r of runnerRocks) {
       r.x -= ROCK_SPEED * dt;
       if (r.x < -100) r.x = viewport.clientWidth + Math.random()*600 + 200;
@@ -222,7 +231,7 @@ function loop(ts) {
       if (coll) {
         if (player.big) { player.big = false; playerEl.classList.remove('big'); setHUDActive(false); }
         else { running = false; gameOverTitle.textContent = '¡Ay! Te golpeó una roca'; gameOverOverlay.classList.add('visible'); }
-        r.x = -120; // evitar doble golpe
+        r.x = -120;
       }
       r.el.style.left = r.x + 'px';
     }
