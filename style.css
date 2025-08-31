@@ -35,9 +35,14 @@ h1 { margin: 16px 0 8px; }
   margin: 20px auto 10px;
   width: 600px;
   height: 200px;
-  /* 🔹 Fondo tileable repetido (ahora PNG) */
-  background: url("img/FondoTile.png") repeat-x bottom;
-  background-size: auto 100%;   /* mantiene altura del juego, se repite en horizontal */
+
+  /* 🔹 Fondo tileable (archivo exacto FondoTile.PNG) */
+  background-color: #ffffff;
+  background-image: url("img/FondoTile.PNG");
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  background-size: auto 100%;
+
   border: 2px solid #333;
   overflow: hidden;
 }
@@ -112,7 +117,7 @@ h1 { margin: 16px 0 8px; }
 #obstacle {
   position: absolute;
   bottom: 0;
-  right: -50px;           /* se resetea por JS */
+  right: -50px;
   width: 50px; height: 50px;
   background-image: url("img/Roca.png");
   background-size: contain;
@@ -124,8 +129,6 @@ h1 { margin: 16px 0 8px; }
   from { right: -50px; }
   to   { right: 100%; }
 }
-
-/* Efecto destruir roca */
 #obstacle.disintegrate {
   animation: rockVanish .28s ease forwards;
 }
@@ -162,7 +165,6 @@ h1 { margin: 16px 0 8px; }
   background:#fff; font-size:22px; font-weight:700;
   touch-action: manipulation;
 }
-
 /* Ocultar controles en escritorio ancho */
 @media (min-width: 1200px) {
   .controls { display:none; }
