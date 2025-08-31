@@ -1,15 +1,15 @@
-const gameArea = document.getElementById("gameArea");
-const player   = document.getElementById("player");
-const obstacle = document.getElementById("obstacle");
-const cave     = document.getElementById("cave");
+const gameArea  = document.getElementById("gameArea");
+const player    = document.getElementById("player");
+const obstacle  = document.getElementById("obstacle");
+const cave      = document.getElementById("cave");
 
 const startScreen = document.getElementById("startScreen");
 const playBtn     = document.getElementById("playBtn");
 
-const btnLeft    = document.getElementById("btnLeft");
-const btnRight   = document.getElementById("btnRight");
-const btnJump    = document.getElementById("btnJump");
-const btnAttack  = document.getElementById("btnAttack");
+const btnLeft   = document.getElementById("btnLeft");
+const btnRight  = document.getElementById("btnRight");
+const btnJump   = document.getElementById("btnJump");
+const btnAttack = document.getElementById("btnAttack");
 
 /* --- Estado --- */
 let running = false;
@@ -30,7 +30,7 @@ const JUMP_BOOST_TIME = 360;
 let jumpBoostVX = 0;
 let jumpBoostUntil = 0;
 
-// Dirección de mirada del oso (1 der, -1 izq) — se usa para voltear y para el impulso
+// Dirección de mirada del oso (1 der, -1 izq)
 let lastMoveDir = 1;
 
 /* Mundo de 2 minutos caminando recto */
@@ -44,8 +44,7 @@ const RIGHT_FRACTION_WHEN_TRAVELING = 0.65;
 const ATTACK_DURATION = 180;  // ms
 const ATTACK_COOLDOWN = 280;  // ms
 let attacking = false;
-let attackUntil = 0;
-let nextAttack  = 0;
+let nextAttack = 0;
 
 /* ---------- Inicio ---------- */
 playBtn.addEventListener("click", () => {
@@ -67,17 +66,13 @@ function startGame() {
 
 /* ---------- Teclado ---------- */
 document.addEventListener("keydown", (e) => {
-  if (e.code === "Space") {
-    e.preventDefault();
-    if (running && !isJumping) jump();
-  }
+  if (e.code === "Space") { e.preventDefault(); if (running && !isJumping) jump(); }
   if (e.code === "ArrowLeft")  { leftPressed  = true; lastMoveDir = -1; }
   if (e.code === "ArrowRight") { rightPressed = true; lastMoveDir =  1; }
   if (e.code === "KeyS")       { attackPressed = true; tryAttack(); }
 
   if ((e.code === "Enter" || e.code === "Space") && startScreen.classList.contains("visible")) {
-    e.preventDefault();
-    playBtn.click();
+    e.preventDefault(); playBtn.click();
   }
 });
 document.addEventListener("keyup", (e) => {
@@ -108,27 +103,23 @@ function tryAttack(){
   if (!running) return;
   if (attacking || now < nextAttack) return;
   attacking = true;
-  attackUntil = now + ATTACK_DURATION;
-  nextAttack  = now + ATTACK_COOLDOWN;
+  nextAttack = now + ATTACK_COOLDOWN;
   player.classList.add("attacking");
   setTimeout(() => {
     attacking = false;
     player.classList.remove("attacking");
   }, ATTACK_DURATION);
 }
-
 function getSwordRect() {
   const p = player.getBoundingClientRect();
-  const swordW = 70, swordH = 70; // hitbox
+  const swordW = 70, swordH = 70;
   if (lastMoveDir > 0) {
     return { left: p.right - 10, right: p.right - 10 + swordW, top: p.top + 10, bottom: p.top + 10 + swordH };
   } else {
     return { left: p.left - swordW + 10, right: p.left + 10, top: p.top + 10, bottom: p.top + 10 + swordH };
   }
 }
-function rectsOverlap(a,b){
-  return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
-}
+function rectsOverlap(a,b){ return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom); }
 
 /* ---------- Movimiento + “mundo” ---------- */
 let lastTime = 0;
@@ -140,42 +131,34 @@ function moveLoop(t){
   if (running){
     const rect = gameArea.getBoundingClientRect();
 
-    /* Volteo (solo espejo horizontal, no afecta al suelo) */
+    // Volteo visual (no afecta al suelo)
     player.classList.toggle("facing-left", lastMoveDir < 0);
 
-    /* 1) Velocidad en pantalla */
+    // 1) Velocidad en pantalla
     let vx = 0;
     if (leftPressed)  vx -= PLAYER_SPEED;
     if (rightPressed) vx += PLAYER_SPEED;
+    if (performance.now() < jumpBoostUntil) vx += jumpBoostVX;
 
-    if (performance.now() < jumpBoostUntil) {
-      vx += jumpBoostVX;  // impulso con signo ±
-    }
-
-    /* 2) Límite a la derecha (no arrinconar hasta el final) */
+    // 2) Límite derecho dinámico (no arrinconar hasta el final)
     const nearEnd = worldX > TRACK_LENGTH - rect.width * 1.2;
-    const rightLimit = nearEnd
-      ? rect.width - PLAYER_WIDTH
-      : rect.width * RIGHT_FRACTION_WHEN_TRAVELING - PLAYER_WIDTH;
+    const rightLimit = nearEnd ? rect.width - PLAYER_WIDTH
+                               : rect.width * RIGHT_FRACTION_WHEN_TRAVELING - PLAYER_WIDTH;
 
     playerX = Math.max(0, Math.min(rightLimit, playerX + vx * dt));
-    player.style.left = playerX + "px";    // bottom:0 en CSS → nunca flota
+    player.style.left = playerX + "px";          // bottom: var(--ground-offset) → siempre suelo
 
-    /* 3) Avance real del mundo (siempre cuenta el impulso en su dirección) */
+    // 3) Avance real del mundo (suma impulso con su signo)
     const boost = (performance.now() < jumpBoostUntil) ? (JUMP_FORWARD_VX * lastMoveDir) : 0;
-    const worldVX =
-      (rightPressed ? PLAYER_SPEED : 0) + boost - (leftPressed ? PLAYER_SPEED : 0);
+    const worldVX = (rightPressed ? PLAYER_SPEED : 0) + boost - (leftPressed ? PLAYER_SPEED : 0);
     worldX = Math.max(0, Math.min(TRACK_LENGTH, worldX + worldVX * dt));
 
-    /* 4) Fondo desplazándose y NUNCA blanco (repeat-x en CSS) */
+    // 4) Parallax del fondo (repeat-x en CSS garantizado)
     gameArea.style.backgroundPositionX = `${-worldX * 0.25}px`;
 
-    /* 5) Cueva al final */
-    if (worldX > TRACK_LENGTH - rect.width * 2) {
-      cave.style.display = "block";
-    } else {
-      cave.style.display = "none";
-    }
+    // 5) Cueva al final
+    if (worldX > TRACK_LENGTH - rect.width * 2) cave.style.display = "block";
+    else cave.style.display = "none";
 
     if (worldX >= TRACK_LENGTH) {
       running = false;
@@ -183,7 +166,7 @@ function moveLoop(t){
       startScreen.classList.add("visible");
     }
 
-    /* 6) Ataque vs roca */
+    // 6) Ataque vs roca
     if (attacking) {
       const sRect = getSwordRect();
       const oRect = obstacle.getBoundingClientRect();
@@ -199,17 +182,13 @@ requestAnimationFrame(moveLoop);
 /* ---------- Salto ---------- */
 function jump() {
   isJumping = true;
-
   const dir = rightPressed ? 1 : (leftPressed ? -1 : lastMoveDir);
   lastMoveDir = dir;
   jumpBoostVX = JUMP_FORWARD_VX * dir;
   jumpBoostUntil = performance.now() + JUMP_BOOST_TIME;
 
   player.classList.add("jump");
-  setTimeout(() => {
-    player.classList.remove("jump");
-    isJumping = false;
-  }, 550);
+  setTimeout(() => { player.classList.remove("jump"); isJumping = false; }, 550);
 }
 
 /* ---------- Obstáculo ---------- */
@@ -230,7 +209,7 @@ function disintegrateRock(){
   }, 350);
 }
 
-/* Colisiones AABB para pisar si no atacas */
+/* Colisiones básicas para pisar si no atacas */
 function isColliding(a, b) {
   const ra = a.getBoundingClientRect();
   const rb = b.getBoundingClientRect();
@@ -251,10 +230,7 @@ setInterval(() => {
     } else if (!attacking && !gameOverLock) {
       gameOverLock = true; running = false;
       alert("¡Te golpeó el enemigo!");
-      setTimeout(() => {
-        gameOverLock = false;
-        startScreen.classList.add("visible");
-      }, 250);
+      setTimeout(() => { gameOverLock = false; startScreen.classList.add("visible"); }, 250);
     }
   }
 }, 80);
