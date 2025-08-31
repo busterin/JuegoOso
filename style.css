@@ -40,21 +40,43 @@ h1 { margin: 16px 0 8px; }
   overflow: hidden;
 }
 
-/* --- JUGADOR (OSO) más grande --- */
+/* --- JUGADOR (OSO) --- */
 #player {
   position: absolute;
   bottom: 0;
   left: 50px;
-  width: 80px;
+  width: 80px;   /* más grande que la roca */
   height: 80px;
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
   transform-origin: bottom center;
+  transition: transform .06s linear;
+}
+#player.facing-left { transform: scaleX(-1); }
+
+/* Espada (hijo del oso) */
+#player { position: relative; }
+#player .sword {
+  position: absolute;
+  width: 80px; height: 80px;
+  bottom: 24px; left: 58px; /* lado derecho por defecto */
+  background: url("img/Espada.png") center/contain no-repeat;
+  opacity: 0; transform: translateY(8px) rotate(12deg);
+  transition: opacity .06s ease, transform .06s ease;
+  pointer-events: none;
+}
+#player.attacking .sword { opacity: 1; transform: translateY(0) rotate(-12deg); }
+#player.facing-left .sword {
+  left: auto; right: 58px;
+  transform: scaleX(-1) translateY(8px) rotate(12deg);
+}
+#player.facing-left.attacking .sword {
+  transform: scaleX(-1) translateY(0) rotate(-12deg);
 }
 
-/* --- OBSTÁCULO (ROCA) más pequeño --- */
+/* --- OBSTÁCULO (ROCA) --- */
 #obstacle {
   position: absolute;
   bottom: 0;
@@ -67,10 +89,20 @@ h1 { margin: 16px 0 8px; }
   background-position: bottom center;
   animation: moveObstacle 2s linear infinite;
 }
-
 @keyframes moveObstacle {
   from { right: -50px; }
   to   { right: 100%; }
+}
+
+/* Efecto desintegración de la roca al ser golpeada */
+#obstacle.disintegrate {
+  animation: rockVanish .35s ease forwards;
+  filter: blur(0);
+}
+@keyframes rockVanish {
+  0%   { opacity: 1; transform: scale(1);   filter: blur(0px); }
+  60%  { opacity: .4; transform: scale(1.15); filter: blur(2px); }
+  100% { opacity: 0; transform: scale(1.25) translateY(-8px); filter: blur(4px); }
 }
 
 /* --- CUEVA --- */
@@ -103,7 +135,7 @@ h1 { margin: 16px 0 8px; }
   touch-action: manipulation;
 }
 
-/* 🔒 Ocultar controles en escritorio (≥800px) */
+/* Ocultar controles en escritorio (≥800px) */
 @media (min-width: 800px) {
   .controls { display:none; }
 }
