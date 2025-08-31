@@ -119,7 +119,7 @@ function moveLoop(t){
     playerX = Math.max(0, Math.min(rightLimit, playerX + vx * dt));
     player.style.left = playerX + "px";
 
-    // Avance real del mundo (AQUÍ ESTABA EL FALLO: ahora sumamos SIEMPRE el impulso con su signo)
+    // Avance real del mundo
     const boost = (performance.now() < jumpBoostUntil) ? (JUMP_FORWARD_VX * lastMoveDir) : 0;
     const worldVX =
       (rightPressed ? PLAYER_SPEED : 0) +
@@ -153,13 +153,11 @@ requestAnimationFrame(moveLoop);
 function jump() {
   isJumping = true;
 
-  // Dirección del impulso: tecla actual o última usada
   const dir = rightPressed ? 1 : (leftPressed ? -1 : lastMoveDir);
-  lastMoveDir = dir;                       // recuerda la dirección
-  jumpBoostVX = JUMP_FORWARD_VX * dir;     // aplica signo (±)
+  lastMoveDir = dir;
+  jumpBoostVX = JUMP_FORWARD_VX * dir;
   jumpBoostUntil = performance.now() + JUMP_BOOST_TIME;
 
-  // Animación vertical (CSS)
   player.classList.add("jump");
   setTimeout(() => {
     player.classList.remove("jump");
