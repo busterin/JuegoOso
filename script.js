@@ -37,9 +37,37 @@ let worldX = 0;
 
 const RIGHT_FRACTION_WHEN_TRAVELING = 0.65;
 
-/* Ataque */
-let attackCooldownUntil = 0;
-const ATTACK_COOLDOWN = 220;
+/* --- Spawner de obstáculos (más fácil) --- */
+const OB_MIN_DURATION = 2.8;   // s  (antes ~2)  → más lento
+const OB_MAX_DURATION = 3.6;   // s
+const OB_MIN_DELAY    = 900;   // ms pausa entre rocas
+const OB_MAX_DELAY    = 1700;  // ms
+let obstacleTimer = null;
+
+function rand(min, max){ return Math.random() * (max - min) + min; }
+function randi(min, max){ return Math.floor(rand(min, max)); }
+
+function spawnObstacle(){
+  if (!running) return;
+  // prepara
+  obstacle.classList.remove("disintegrate");
+  obstacle.style.opacity = "1";
+  obstacle.style.transform = "";
+  obstacle.style.right = "-50px";
+  // lanza una sola pasada con duración aleatoria
+  const dur = rand(OB_MIN_DURATION, OB_MAX_DURATION).toFixed(2);
+  obstacle.style.animation = `moveObstacle ${dur}s linear 1`;
+}
+function scheduleNextObstacle(delayMs){
+  clearTimeout(obstacleTimer);
+  obstacleTimer = setTimeout(spawnObstacle, delayMs);
+}
+
+// al terminar de cruzar, agenda la siguiente
+obstacle.addEventListener("animationend", () => {
+  obstacle.style.animation = "none";
+  scheduleNextObstacle(randi(OB_MIN_DELAY, OB_MAX_DELAY));
+});
 
 /* ---------- Inicio ---------- */
 playBtn.addEventListener("click", () => {
@@ -56,33 +84,26 @@ function startGame() {
   cave.style.display = "none";
   gameOverLock = false;
 
-  // Reset visual espada/destello
-  if (swordEl) {
-    swordEl.style.opacity = "0";
-    swordEl.style.left = "-9999px";
-    swordEl.classList.remove("swing-right","swing-left");
-  }
-  if (sparkEl) {
-    sparkEl.style.left = "-9999px";
-    sparkEl.classList.remove("burst");
-  }
+  // Reset espada/destello
+  swordEl.style.opacity = "0";
+  swordEl.style.left = "-9999px";
+  swordEl.classList.remove("swing-right","swing-left");
+  sparkEl.style.left = "-9999px";
+  sparkEl.classList.remove("burst");
 
-  restartObstacle();
+  // comenzar con una pequeña espera
+  scheduleNextObstacle(700);
 }
 
 /* ---------- Input teclado ---------- */
 document.addEventListener("keydown", (e) => {
-  if (e.code === "Space") {
-    e.preventDefault();
-    if (running && !isJumping) jump();
-  }
+  if (e.code === "Space") { e.preventDefault(); if (running && !isJumping) jump(); }
   if (e.code === "ArrowLeft")  { leftPressed  = true; lastMoveDir = -1; }
   if (e.code === "ArrowRight") { rightPressed = true; lastMoveDir =  1; }
   if (e.code === "KeyS")       { doAttack(); }
 
   if ((e.code === "Enter" || e.code === "Space") && startScreen.classList.contains("visible")) {
-    e.preventDefault();
-    playBtn.click();
+    e.preventDefault(); playBtn.click();
   }
 });
 document.addEventListener("keyup", (e) => {
@@ -121,9 +142,7 @@ function moveLoop(t){
     if (leftPressed)  vx -= PLAYER_SPEED;
     if (rightPressed) vx += PLAYER_SPEED;
 
-    if (performance.now() < jumpBoostUntil) {
-      vx += jumpBoostVX;
-    }
+    if (performance.now() < jumpBoostUntil) { vx += jumpBoostVX; }
 
     const nearEnd = worldX > TRACK_LENGTH - rect.width * 1.2;
     const rightLimit = nearEnd ? rect.width - PLAYER_WIDTH
@@ -143,6 +162,8 @@ function moveLoop(t){
 
     if (worldX >= TRACK_LENGTH) {
       running = false;
+      clearTimeout(obstacleTimer);
+      obstacle.style.animation = "none";
       alert("¡Llegaste a la cueva! 🥳");
       startScreen.classList.add("visible");
     }
@@ -164,74 +185,61 @@ function jump() {
 }
 
 /* ---------- Ataque (visual + hitbox virtual) ---------- */
+let attackCooldownUntil = 0;
+const ATTACK_COOLDOWN = 220;
+
 function doAttack(){
   if (!running) return;
   const now = performance.now();
   if (now < attackCooldownUntil) return;
   attackCooldownUntil = now + ATTACK_COOLDOWN;
 
-  // Coordenadas relativas a .game (para posicionar espada/spark con precisión)
   const gameRect = gameArea.getBoundingClientRect();
   const pr = player.getBoundingClientRect();
-  const playerLeftInGame = pr.left - gameRect.left;
+  const playerLeftInGame  = pr.left  - gameRect.left;
   const playerRightInGame = pr.right - gameRect.left;
 
-  // Posición y visual de la espada (forzamos visibilidad)
+  // Posicionar espada visual
   const x = lastMoveDir > 0 ? (playerRightInGame - 12) : (playerLeftInGame - 58);
   swordEl.style.left = `${x}px`;
   swordEl.style.bottom = "18px";
   swordEl.style.opacity = "1";
-  swordEl.style.display = "block";
-  swordEl.style.visibility = "visible";
   swordEl.classList.remove("swing-right","swing-left");
-  void swordEl.offsetWidth; // reset anim
+  void swordEl.offsetWidth;
   swordEl.classList.add(lastMoveDir > 0 ? "swing-right" : "swing-left");
 
-  // Hitbox virtual delante del oso (para daño)
+  // Hitbox virtual
   const hitbox = (lastMoveDir > 0)
     ? { left: pr.right, right: pr.right + 60, top: pr.bottom - 70, bottom: pr.bottom - 20 }
     : { left: pr.left - 60, right: pr.left, top: pr.bottom - 70, bottom: pr.bottom - 20 };
 
-  // Comprobar contra roca
   const or = obstacle.getBoundingClientRect();
   const hit = !(hitbox.right < or.left || hitbox.left > or.right || hitbox.bottom < or.top || hitbox.top > or.bottom);
-  if (hit) {
-    // Destello en el punto de contacto (frente del oso)
-    const sparkX = lastMoveDir > 0 ? (playerRightInGame + 20) : (playerLeftInGame - 20 - 34);
-    sparkEl.style.left = `${sparkX}px`;
-    sparkEl.style.bottom = "42px"; // aprox: mitad del golpe
-    sparkEl.classList.remove("burst");
-    void sparkEl.offsetWidth;
-    sparkEl.classList.add("burst");
 
-    destroyRock();
-  } else {
-    // Destello “al aire” delante del oso para feedback
-    const sparkX = lastMoveDir > 0 ? (playerRightInGame + 14) : (playerLeftInGame - 14 - 34);
-    sparkEl.style.left = `${sparkX}px`;
-    sparkEl.style.bottom = "38px";
-    sparkEl.classList.remove("burst");
-    void sparkEl.offsetWidth;
-    sparkEl.classList.add("burst");
-  }
+  // Spark para feedback
+  const sparkX = lastMoveDir > 0 ? (playerRightInGame + (hit ? 20 : 14))
+                                 : (playerLeftInGame  - (hit ? 20 : 14) - 34);
+  sparkEl.style.left = `${sparkX}px`;
+  sparkEl.style.bottom = hit ? "42px" : "38px";
+  sparkEl.classList.remove("burst");
+  void sparkEl.offsetWidth;
+  sparkEl.classList.add("burst");
 
-  // Oculta la espada tras el swing
+  if (hit) destroyRock();
+
+  // Ocultar espada tras el swing
   setTimeout(() => { swordEl.style.opacity = "0"; }, 240);
 }
 
 /* ---------- Obstáculo ---------- */
-function restartObstacle() {
-  obstacle.classList.remove("disintegrate");
-  obstacle.style.animation = "none";
-  void obstacle.offsetWidth;
-  obstacle.style.animation = "moveObstacle 2s linear infinite";
-}
 function destroyRock(){
-  obstacle.classList.add("disintegrate");
+  // parar animación actual y efecto
   obstacle.style.animation = "none";
+  obstacle.classList.add("disintegrate");
   setTimeout(() => {
     obstacle.classList.remove("disintegrate");
-    restartObstacle();
+    // agenda la siguiente con pausa
+    scheduleNextObstacle(randi(OB_MIN_DELAY, OB_MAX_DELAY));
   }, 280);
 }
 
@@ -251,11 +259,17 @@ function isStomp(playerEl, obstEl) {
 setInterval(() => {
   if (!running) return;
   if (isColliding(player, obstacle)) {
-    if (isStomp(player, obstacle)) destroyRock();
-    else if (!gameOverLock) {
+    if (isStomp(player, obstacle)) {
+      destroyRock();
+    } else if (!gameOverLock) {
       gameOverLock = true; running = false;
+      clearTimeout(obstacleTimer);
+      obstacle.style.animation = "none";
       alert("¡Te golpeó el enemigo!");
-      setTimeout(() => { gameOverLock = false; startScreen.classList.add("visible"); }, 250);
+      setTimeout(() => {
+        gameOverLock = false;
+        startScreen.classList.add("visible");
+      }, 250);
     }
   }
 }, 100);
