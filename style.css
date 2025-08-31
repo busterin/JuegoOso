@@ -50,7 +50,8 @@ h1 { margin: 16px 0 8px; }
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
-  background-position: bottom center;
+  /* 👇 Ajuste: empuja la textura 10px hacia abajo para eliminar “flotación” */
+  background-position: center calc(100% + 10px);
   transform-origin: bottom center;
 }
 
@@ -67,7 +68,6 @@ h1 { margin: 16px 0 8px; }
   background-position: bottom center;
   animation: moveObstacle 2s linear infinite;
 }
-
 @keyframes moveObstacle {
   from { right: -50px; }
   to   { right: 100%; }
