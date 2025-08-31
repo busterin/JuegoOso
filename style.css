@@ -40,7 +40,7 @@ h1 { margin: 16px 0 8px; }
   overflow: hidden;
 }
 
-/* --- JUGADOR (OSO) más grande --- */
+/* --- JUGADOR (OSO) --- */
 #player {
   position: absolute;
   bottom: 0;
@@ -50,33 +50,13 @@ h1 { margin: 16px 0 8px; }
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
-  /* Compensación para evitar “flotación” del PNG si tiene aire inferior */
-  background-position: center calc(100% + 10px);
-  transform-origin: bottom center;
-  z-index: 2; /* por encima del fondo y que la espada quede visible */
+  background-position: bottom center;
+  transform-origin: bottom center; /* para voltear sin “flotar” */
 }
+/* Volteo al mirar a la izquierda */
+#player.facing-left { transform: scaleX(-1); }
 
-/* --- ESPADA --- */
-#player { position: relative; }
-#player .sword {
-  position: absolute;
-  width: 60px; height: 60px;
-  left: 66px;              /* a la derecha del oso (ajusta si quieres) */
-  bottom: 18px;            /* altura aproximada de la mano */
-  background: url("img/Espada.png") center/contain no-repeat;
-  opacity: 0;
-  transform: rotate(0deg);
-  transition: opacity .1s ease, transform .1s ease;
-  pointer-events: none;
-  z-index: 3;              /* por encima del oso */
-}
-/* Cuando atacamos, mostramos y “balanceamos” un poco la espada */
-#player.attacking .sword {
-  opacity: 1;
-  transform: rotate(-30deg);
-}
-
-/* --- OBSTÁCULO (ROCA) más pequeño --- */
+/* --- OBSTÁCULO (ROCA) --- */
 #obstacle {
   position: absolute;
   bottom: 0;
@@ -88,7 +68,6 @@ h1 { margin: 16px 0 8px; }
   background-repeat: no-repeat;
   background-position: bottom center;
   animation: moveObstacle 2s linear infinite;
-  z-index: 1;
 }
 @keyframes moveObstacle {
   from { right: -50px; }
@@ -104,7 +83,6 @@ h1 { margin: 16px 0 8px; }
   height: 100px;
   background: url("img/Cueva.png") bottom center / contain no-repeat;
   display: none;
-  z-index: 1;
 }
 
 /* --- SALTO --- */
@@ -126,7 +104,7 @@ h1 { margin: 16px 0 8px; }
   touch-action: manipulation;
 }
 
-/* Ocultar controles SOLO en pantallas grandes (tablet visible) */
+/* Ocultar controles solo en pantallas grandes (≥1200px) -> visibles en móvil/tablet */
 @media (min-width: 1200px) {
   .controls { display:none; }
 }
