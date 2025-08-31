@@ -68,13 +68,23 @@ h1 { margin: 16px 0 8px; }
   pointer-events: none;
   z-index: 4;
   transform-origin: 10% 80%;
-  /* Depuración: quita el outline al confirmar */
-  outline: 2px dashed magenta;
 }
-#sword.swing-right, .sword.swing-right { animation: swingRight 220ms ease-out forwards; opacity: 1; }
-#sword.swing-left,  .sword.swing-left  { animation: swingLeft  220ms ease-out forwards; opacity: 1; }
-@keyframes swingRight { 0% {transform: rotate(40deg) translateX(-10px);} 100% {transform: rotate(-35deg) translateX(6px);} }
-@keyframes swingLeft  { 0% {transform: scaleX(-1) rotate(40deg) translateX(-10px);} 100% {transform: scaleX(-1) rotate(-35deg) translateX(6px);} }
+#sword.swing-right, .sword.swing-right {
+  animation: swingRight 220ms ease-out forwards;
+  opacity: 1;
+}
+#sword.swing-left, .sword.swing-left {
+  animation: swingLeft 220ms ease-out forwards;
+  opacity: 1;
+}
+@keyframes swingRight {
+  0%   { transform: rotate(40deg) translateX(-10px); }
+  100% { transform: rotate(-35deg) translateX(6px); }
+}
+@keyframes swingLeft {
+  0%   { transform: scaleX(-1) rotate(40deg) translateX(-10px); }
+  100% { transform: scaleX(-1) rotate(-35deg) translateX(6px); }
+}
 
 /* ✨ Destello (spark) */
 #spark {
@@ -87,8 +97,14 @@ h1 { margin: 16px 0 8px; }
   z-index: 5;
   opacity: 0;
 }
-#spark.burst { animation: sparkPop 260ms ease-out forwards; }
-@keyframes sparkPop { 0%{transform:scale(0.6);opacity:0;} 30%{transform:scale(1.2);opacity:1;} 100%{transform:scale(1.6);opacity:0;} }
+#spark.burst {
+  animation: sparkPop 260ms ease-out forwards;
+}
+@keyframes sparkPop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  30%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
 
 /* --- OBSTÁCULO (ROCA) --- */
 #obstacle {
@@ -100,7 +116,7 @@ h1 { margin: 16px 0 8px; }
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
-  /* ❗ Sin animación infinita aquí. La lanza JS con duración y pausas. */
+  /* la animación se lanza por JS */
   z-index: 1;
 }
 @keyframes moveObstacle {
@@ -109,11 +125,13 @@ h1 { margin: 16px 0 8px; }
 }
 
 /* Efecto destruir roca */
-#obstacle.disintegrate { animation: rockVanish .28s ease forwards; }
+#obstacle.disintegrate {
+  animation: rockVanish .28s ease forwards;
+}
 @keyframes rockVanish {
-  0% { opacity:1; transform:scale(1); filter:blur(0); }
-  70%{ opacity:.35; transform:scale(1.15); filter:blur(2px); }
-  100%{ opacity:0; transform:scale(1.25) translateY(-6px); filter:blur(4px); }
+  0%   { opacity: 1; transform: scale(1); filter: blur(0); }
+  70%  { opacity: .35; transform: scale(1.15); filter: blur(2px); }
+  100% { opacity: 0; transform: scale(1.25) translateY(-6px); filter: blur(4px); }
 }
 
 /* --- CUEVA --- */
@@ -127,7 +145,11 @@ h1 { margin: 16px 0 8px; }
 
 /* --- SALTO --- */
 .jump { animation: jump 0.55s ease; }
-@keyframes jump { 0%{bottom:0;} 50%{bottom:120px;} 100%{bottom:0;} }
+@keyframes jump {
+  0%   { bottom: 0; }
+  50%  { bottom: 120px; }
+  100% { bottom: 0; }
+}
 
 /* Controles móviles */
 .controls {
@@ -139,5 +161,8 @@ h1 { margin: 16px 0 8px; }
   background:#fff; font-size:22px; font-weight:700;
   touch-action: manipulation;
 }
+
 /* Ocultar controles en escritorio ancho */
-@media (min-width: 1200px) { .controls { display:none; } }
+@media (min-width: 1200px) {
+  .controls { display:none; }
+}
