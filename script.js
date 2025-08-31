@@ -1,4 +1,4 @@
-/***** ELEMENTOS UI *****/
+/***** ELEMENTOS DEL DOM *****/
 const viewport = document.getElementById('viewport');
 const world = document.getElementById('world');
 const playerEl = document.getElementById('player');
@@ -6,9 +6,6 @@ const blocksEl = document.getElementById('blocks');
 const itemsEl = document.getElementById('items');
 const caveEl = document.getElementById('cave');
 const runnerRocksEl = document.getElementById('runnerRocks');
-
-const startOverlay = document.getElementById('startOverlay');
-const startBtn = document.getElementById('startBtn');
 
 const gameOverOverlay = document.getElementById('gameOverOverlay');
 const gameOverTitle = document.getElementById('gameOverTitle');
@@ -24,12 +21,12 @@ const JUMP_VELOCITY = 840;
 const ROCK_SPEED = 90;
 const PARALLAX_FACTOR = 0.3;
 
-// Salto hacia delante
-const JUMP_FORWARD_SPEED = 210;
-const JUMP_BOOST_TIME   = 380;
+// Salto hacia delante (más fácil)
+const JUMP_FORWARD_SPEED = 230;
+const JUMP_BOOST_TIME   = 420;
 const AIR_ACCEL         = 650;
-const MAX_AIR_SPEED     = 220;
-const AIR_DRIFT_MIN     = 130;
+const MAX_AIR_SPEED     = 240;
+const AIR_DRIFT_MIN     = 140;
 
 // Ataque
 const ATTACK_DURATION  = 180;
@@ -37,13 +34,13 @@ const ATTACK_COOLDOWN  = 320;
 const ATTACK_RANGE_X   = 110;
 const ATTACK_RANGE_Y   = 90;
 
-// Rocas (espaciado)
-const ROCK_MIN_GAP       = 480;
-const ROCK_RESPAWN_BASE  = 220;
-const ROCK_RESPAWN_RAND  = 520;
+// Rocas: separación y nunca dos juntas
+const ROCK_MIN_GAP       = 520;
+const ROCK_RESPAWN_BASE  = 260;
+const ROCK_RESPAWN_RAND  = 560;
 
-// Ajuste fino de baseline (alineación exacta con rocas)
-const BEAR_BASELINE_OFFSET = -8; // ajusta -6/-10 si lo ves 1–2 px distinto
+// Ajuste fino por si tu PNG de oso tiene margen transparente inferior
+const BEAR_BASELINE_OFFSET = -8;
 
 /***** ESTADO *****/
 const player = { x:120, y:GROUND_Y, vx:0, vy:0, width:90, height:90, onGround:true, big:false, facing:1 };
@@ -51,15 +48,16 @@ let jumpBoostUntil = 0;
 let isAttacking = false;
 let attackUntil = 0;
 let nextAttackTime = 0;
-
 let last = 0;
-let running = false;
+let running = true; // este index no tiene pantalla de inicio: entra jugando
 
-/***** ESPADA (fallback PNG si no hay GIF) *****/
-const swordEl = playerEl.querySelector('.sword');
-(function ensureSwordImage(){
+/***** Espada: crear nodo y fallback PNG si no hay GIF *****/
+(function attachSword(){
+  const s = document.createElement('div');
+  s.className = 'sword';
+  playerEl.appendChild(s);
   const test = new Image();
-  test.onerror = () => { swordEl.style.backgroundImage = 'url("img/Espada.png")'; };
+  test.onerror = () => { s.style.backgroundImage = 'url("img/Espada.png")'; };
   test.src = 'img/Espada.gif';
 })();
 
@@ -103,8 +101,9 @@ function buildLevel() {
   items = [];
   for (let x=500; x<LEVEL_WIDTH-800; x+=900) placeBlock(x);
 }
+buildLevel();
 
-/***** ROCAS *****/
+/***** ROCAS (runner) *****/
 let runnerRocks = [];
 function clearRocks() {
   runnerRocksEl.innerHTML = '';
@@ -116,6 +115,11 @@ function spawnRock(x) {
   const r = { x, y:0, width:70, height:70, el, dead:false };
   runnerRocks.push(r);
 }
+function farthestRockX() {
+  let fx = viewport.clientWidth;
+  for (const o of runnerRocks) if (!o.dead && o.x > fx) fx = o.x;
+  return fx;
+}
 function spawnInitialRocks(){
   clearRocks();
   const vw = viewport.clientWidth || Math.min(1100, window.innerWidth || 1100);
@@ -124,6 +128,7 @@ function spawnInitialRocks(){
   spawnRock(base + ROCK_MIN_GAP + 320);
   spawnRock(base + 2*(ROCK_MIN_GAP + 320));
 }
+spawnInitialRocks();
 
 /***** CÁMARA + PARALLAX *****/
 function updateCamera() {
@@ -139,14 +144,8 @@ const keys = { left:false, right:false, jump:false, attack:false };
 document.addEventListener('keydown', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-
   if (e.code === 'Space') { e.preventDefault(); keys.jump = true; }
   if (e.code === 'KeyS') keys.attack = true;
-
-  // También permitir empezar con Enter o Space
-  if ((e.code === 'Enter' || e.code === 'Space') && startOverlay.classList.contains('visible')) {
-    e.preventDefault(); startGame();
-  }
 });
 document.addEventListener('keyup', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
@@ -154,31 +153,9 @@ document.addEventListener('keyup', e => {
   if (e.code === 'Space') keys.jump = false;
   if (e.code === 'KeyS') keys.attack = false;
 });
-startBtn.addEventListener('click', startGame);
-retryBtn.addEventListener('click', () => location.reload());
-
-/***** INICIO / RESET *****/
-function startGame(){
-  // Mostrar juego (ya visible) y quitar overlay
-  startOverlay.classList.remove('visible');
-
-  // Reset estado
-  player.x=120; player.y=GROUND_Y; player.vx=0; player.vy=0;
-  player.onGround=true; player.big=false; player.facing=1;
-  playerEl.className = 'player';
-  setHUDActive(false);
-  jumpBoostUntil = 0;
-  isAttacking = false; attackUntil = 0; nextAttackTime = 0;
-  gameOverOverlay.classList.remove('visible');
-
-  // Construir nivel y rocas después de tener ancho real
-  buildLevel();
-  spawnInitialRocks();
-
-  running = true;
-}
 
 /***** ATAQUE *****/
+let isAttacking = false, attackUntil = 0, nextAttackTime = 0;
 function tryStartAttack(ts){
   if (isAttacking || ts < nextAttackTime) return;
   isAttacking = true;
@@ -194,14 +171,14 @@ function getAttackRect(pScreen){
   }
 }
 
-/***** BUCLE PRINCIPAL *****/
+/***** LOOP *****/
 function loop(ts) {
   if (!last) last = ts;
   const dt = Math.min((ts-last)/1000, 0.033);
   last = ts;
 
   if (running) {
-    // Movimiento horizontal
+    // Movimiento
     let targetVx = 0;
     if (keys.left)  targetVx -= RUN_SPEED;
     if (keys.right) targetVx += RUN_SPEED;
@@ -221,7 +198,7 @@ function loop(ts) {
     if (keys.attack) tryStartAttack(ts);
     if (isAttacking && ts > attackUntil) { isAttacking = false; playerEl.classList.remove('attacking'); }
 
-    // Control en el aire
+    // Aire (drift y límite de velocidad)
     if (!player.onGround) {
       if (ts < jumpBoostUntil) {
         const minV = (player.facing > 0) ?  JUMP_FORWARD_SPEED : -JUMP_FORWARD_SPEED;
@@ -241,7 +218,6 @@ function loop(ts) {
       if (player.vx >  MAX_AIR_SPEED) player.vx =  MAX_AIR_SPEED;
       if (player.vx < -MAX_AIR_SPEED) player.vx = -MAX_AIR_SPEED;
     } else {
-      // En suelo, seguir input exacto
       player.vx = targetVx;
     }
 
@@ -284,12 +260,12 @@ function loop(ts) {
       if (it.el) { it.el.style.left = it.x + 'px'; it.el.style.bottom = it.y + 'px'; }
     }
 
-    // Rocas: mover, colisiones, respawn
+    // Rocas runner
     for (const r of runnerRocks) {
       if (r.dead) continue;
       r.x -= ROCK_SPEED * dt;
 
-      // Coordenadas de pantalla del oso (mundo con cámara)
+      // Player en coordenadas de pantalla
       const center = Math.min(Math.max(player.x, viewport.clientWidth/2), LEVEL_WIDTH - viewport.clientWidth/2);
       const offset = -center + viewport.clientWidth/2;
       const pScreen = { x: player.x + offset, y: player.y, width: player.width*(player.big?1.45:1), height: player.height*(player.big?1.45:1) };
@@ -304,8 +280,7 @@ function loop(ts) {
             r.dead = true; r.el.style.opacity = '0'; r.x = -999;
             setTimeout(() => {
               r.el.style.opacity = '1'; r.dead = false;
-              let lastX = viewport.clientWidth;
-              for (const o of runnerRocks) if (o!==r && !o.dead && o.x>lastX) lastX = o.x;
+              let lastX = farthestRockX();
               r.x = Math.max(viewport.clientWidth+ROCK_RESPAWN_BASE+Math.random()*ROCK_RESPAWN_RAND,
                              lastX+ROCK_MIN_GAP+Math.random()*120);
             }, 180);
@@ -317,10 +292,9 @@ function loop(ts) {
         }
       }
 
-      // Respawn con separación
+      // Respawn con separación: nunca dos juntas
       if (r.x < -140 && !r.dead) {
-        let lastX = viewport.clientWidth;
-        for (const o of runnerRocks) if (o!==r && !o.dead && o.x>lastX) lastX = o.x;
+        let lastX = farthestRockX();
         r.x = Math.max(viewport.clientWidth+ROCK_RESPAWN_BASE+Math.random()*ROCK_RESPAWN_RAND,
                        lastX+ROCK_MIN_GAP+Math.random()*120);
       }
@@ -328,7 +302,7 @@ function loop(ts) {
     }
   }
 
-  /* Render (alineado exacto con las rocas) */
+  // Render (alineado exacto con las rocas)
   playerEl.style.left = player.x + 'px';
   playerEl.style.bottom = (Math.max(player.y, GROUND_Y) + BEAR_BASELINE_OFFSET) + 'px';
 
