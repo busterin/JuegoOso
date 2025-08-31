@@ -35,57 +35,50 @@ h1 { margin: 16px 0 8px; }
   margin: 20px auto;
   width: 600px;
   height: 200px;
-  background: #fff url("img/Fondo.jpg") center/cover no-repeat;
+  background: #fff url("img/Fondo.jpg") center/cover no-repeat; /* fondo desde /img */
   border: 2px solid #333;
   overflow: hidden;
 }
 
-/* Si falta el fondo, al menos deja un color sutil */  /* NUEVO */
-.game.noimg-bg { background: #e8f7ff; }
-
-/* --- JUGADOR (OSO) --- */
+/* --- JUGADOR (OSO) MÁS GRANDE --- */
 #player {
   position: absolute;
   bottom: 0;
   left: 50px;
-  width: 60px;
-  height: 60px;
+  width: 80px;          /* ↑ era 60px */
+  height: 80px;         /* ↑ era 60px */
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
   transform-origin: bottom center;
-  background-color: #8bc34a33; /* NUEVO: color de respaldo si no carga la imagen */
-  outline: 0;                   /* NUEVO */
 }
 
-/* --- OBSTÁCULO (ROCA) --- */
+/* --- OBSTÁCULO (ROCA) MÁS PEQUEÑO --- */
 #obstacle {
   position: absolute;
   bottom: 0;
-  right: -60px;
-  width: 60px;
-  height: 60px;
+  right: -50px;         /* ajustado al nuevo ancho */
+  width: 50px;          /* ↓ era 60px */
+  height: 50px;         /* ↓ era 60px */
   background-image: url("img/Roca.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
   animation: moveObstacle 2s linear infinite;
-  background-color: #f4433633; /* NUEVO: color de respaldo si no carga la imagen */
-  outline: 0;                   /* NUEVO */
 }
 
 @keyframes moveObstacle {
-  from { right: -60px; }
-  to { right: 100%; }
+  from { right: -50px; }   /* acorde al ancho nuevo */
+  to   { right: 100%; }
 }
 
-/* --- SALTO --- */
-.jump { animation: jump 0.5s ease; }
+/* --- SALTO MÁS ALTO --- */
+.jump { animation: jump 0.55s ease; }  /* un pelín más largo para acompañar el impulso */
 
 @keyframes jump {
   0%   { bottom: 0; }
-  50%  { bottom: 90px; }
+  50%  { bottom: 120px; }  /* ↑ era 90px */
   100% { bottom: 0; }
 }
 
@@ -102,13 +95,4 @@ h1 { margin: 16px 0 8px; }
 
 @media (min-width: 800px) {
   .controls { display: none; }
-}
-
-/* Aviso de error de imágenes (banner) */               /* NUEVO */
-.img-warning {
-  position: fixed; left: 50%; transform: translateX(-50%);
-  bottom: 10px; z-index: 2000;
-  background: #fff3cd; color:#7a5d00; border:1px solid #ffe08a;
-  padding: 8px 12px; border-radius: 8px; font-size: 14px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.12);
 }
