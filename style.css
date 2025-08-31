@@ -50,11 +50,10 @@ h1 { margin: 16px 0 8px; }
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
-  background-position: bottom center;
-  transform-origin: bottom center; /* para voltear sin “flotar” */
+  /* 🔧 Compensación para evitar cualquier “flote” del PNG */
+  background-position: center calc(100% + 10px);
+  transform-origin: bottom center;
 }
-/* Volteo al mirar a la izquierda */
-#player.facing-left { transform: scaleX(-1); }
 
 /* --- OBSTÁCULO (ROCA) --- */
 #obstacle {
@@ -104,7 +103,7 @@ h1 { margin: 16px 0 8px; }
   touch-action: manipulation;
 }
 
-/* Ocultar controles solo en pantallas grandes (≥1200px) -> visibles en móvil/tablet */
+/* Ocultar controles solo en pantallas grandes (≥1200px) → móviles y tablets los ven */
 @media (min-width: 1200px) {
   .controls { display:none; }
 }
