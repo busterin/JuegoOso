@@ -1,66 +1,87 @@
-/* --- Base & layout --- */
-* { box-sizing: border-box; }
-html, body { height: 100%; margin:0; }
-body { font-family: system-ui, -apple-system, Arial, sans-serif; background:#eaf2f7; color:#222; }
-.centered { min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:16px; }
-.title { margin:0 0 12px; text-align:center; }
-.start-card { width:min(720px,92vw); background:#fff; border:2px solid #333; border-radius:12px; padding:32px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.08); }
-.subtitle { color:#555; }
-.btn { display:inline-block; padding:12px 20px; border-radius:12px; border:2px solid #333; background:#fff; cursor:pointer; font-weight:600; text-decoration:none; box-shadow:0 4px 0 #333; }
-.btn.primary { background:#2ecc71; border-color:#2ecc71; color:#fff; box-shadow:0 4px 0 #239d57; }
-.btn.ghost { background:transparent; }
+:root{
+  --ui-bg: rgba(0,0,0,0.45);
+  --ui-fg: #fff;
+  --accent: #4cd6ff;
+}
 
-/* --- Game area with PARALLAX --- */
-.game-wrapper { display:flex; align-items:center; justify-content:center; width:100%; }
-.game {
-  position:relative; width:min(1100px,95vw); height:520px;
-  background:url("img/Fondo.jpg") repeat-x bottom;
-  background-size:auto 100%;
-  border:3px solid #333; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.08);
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; background: #87ceeb; /* cielo */
+  font-family: system-ui, Arial, sans-serif;
+  overscroll-behavior: none;
+}
+#game {
+  display: block;
+  width: 100vw; height: 100vh;
+  image-rendering: pixelated;
+  touch-action: none; /* evita scroll durante gestos */
 }
 
 /* HUD */
-.hud {
-  position:absolute; left:10px; top:10px; z-index:50;
-  display:flex; gap:10px; align-items:center;
-  pointer-events:none;
+#hud {
+  position: fixed; top: 12px; left: 12px; right: 12px;
+  display: flex; gap: 12px; align-items: center; pointer-events: none;
 }
-.hud-item {
-  display:flex; align-items:center; gap:6px;
-  background: rgba(255,255,255,.9);
-  border:2px solid #333;
-  border-radius:10px;
-  padding:6px 10px;
-  box-shadow:0 4px 10px rgba(0,0,0,.15);
-  opacity:0; transform: translateY(-6px);
-  transition: opacity .25s ease, transform .25s ease;
+#timer {
+  min-width: 80px; padding: 6px 10px;
+  background: var(--ui-bg); color: var(--ui-fg); border-radius: 8px;
+  text-align: center; font-weight: 700; letter-spacing: 1px;
 }
-.hud-item.active { opacity:1; transform: translateY(0); }
-.hud-icon {
-  width:22px; height:22px;
-  background: url("img/Panal.png") center/contain no-repeat;
+#progress {
+  flex: 1; height: 10px; background: rgba(255,255,255,0.35);
+  border-radius: 6px; overflow: hidden;
 }
-.hud-text { font-weight:700; }
-
-.world { position:absolute; left:0; top:0; width:12000px; height:100%; transform:translateX(0); will-change:transform; pointer-events:none; }
-
-/* Entities */
-.player, .block, .honey, .cave { position:absolute; background-size:contain; background-repeat:no-repeat; background-position:bottom center; }
-.player { width:90px; height:90px; left:120px; bottom:0; background-image:url("img/Oso.png"); transition:transform .08s linear; }
-.player.big { transform: scale(1.45); }
-.player.facing-left { transform: scaleX(-1); }
-.player.facing-left.big { transform: scale(-1, 1.45); }
-
-.block { width:60px; height:60px; bottom:130px; background-image:url("img/Bloque.png"); }
-.block.broken { opacity:.35; filter:grayscale(.8); }
-.honey { width:48px; height:48px; background-image:url("img/Panal.png"); }
-.cave { width:180px; height:160px; bottom:0; background-image:url("img/Cueva.png"); }
-
-#runnerRocks { position:absolute; inset:0; pointer-events:none; }
-.runner-rock { position:absolute; bottom:0; width:90px; height:90px; background:url("img/Roca.png") bottom center / contain no-repeat; }
+#progress-fill {
+  width: 0%; height: 100%; background: var(--accent);
+}
 
 /* Overlays */
-.overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.35); z-index:999; pointer-events:auto; }
-.overlay.visible { display:flex; }
-.overlay-box { background:#fff; border:2px solid #333; border-radius:12px; padding:24px 28px; width:min(460px,90%); text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.2); }
-.overlay-actions { display:flex; gap:12px; justify-content:center; margin-top:10px; }
+#overlay, #overlayEnd {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
+}
+#overlay:not(.show) { display: none; }
+.panel {
+  width: min(90vw, 520px); padding: 24px;
+  background: #111; color: #eee; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  text-align: center;
+}
+.panel button {
+  margin-top: 10px; padding: 10px 18px; border-radius: 10px;
+  border: none; font-size: 16px; font-weight: 700;
+  background: var(--accent); color: #001018; cursor: pointer;
+}
+
+/* Controles táctiles */
+#touchControls {
+  position: fixed; inset: 0; pointer-events: none; display: none;
+}
+#touchControls.visible { display: block; }
+.dpad {
+  position: absolute; left: 12px; bottom: 12px;
+  display: grid; grid-template-columns: repeat(2, 64px); gap: 10px;
+  pointer-events: none;
+}
+.pad {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--ui-bg); color: var(--ui-fg); font-size: 20px;
+  border: 2px solid rgba(255,255,255,0.5);
+  pointer-events: auto;
+}
+#btnLeft { grid-column: 1; }
+#btnRight { grid-column: 2; }
+
+.jump {
+  position: absolute; right: 12px; bottom: 24px;
+  width: 84px; height: 84px; border-radius: 50%;
+  background: var(--ui-bg); color: var(--ui-fg); font-size: 28px;
+  border: 2px solid rgba(255,255,255,0.5);
+  pointer-events: auto;
+}
+
+/* Botones activos */
+.pad:active, .jump:active { transform: scale(0.98); filter: brightness(1.2); }
+
+/* Accesibilidad foco */
+button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
