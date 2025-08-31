@@ -18,9 +18,39 @@ let gameOverLock = false;
 let leftPressed = false;
 let rightPressed = false;
 
-// Posición X del oso (en píxeles) y límites
 let playerX = 50; // debe coincidir con el CSS inicial
 const PLAYER_SPEED = 240; // px/seg
+
+/* --------- PRE-CARGA DE IMÁGENES + AVISOS --------- */
+function preloadImg(src) {
+  return new Promise((resolve) => {
+    const im = new Image();
+    im.onload = () => resolve({ src, ok: true });
+    im.onerror = () => resolve({ src, ok: false });
+    im.src = src;
+  });
+}
+async function checkAssets() {
+  const assets = ["img/Fondo.jpg","img/Oso.png","img/Roca.png"];
+  const results = await Promise.all(assets.map(preloadImg));
+  const failed = results.filter(r => !r.ok).map(r => r.src);
+
+  // Si falta el fondo, aplica una clase para un color de respaldo
+  if (!results.find(r => r.src.includes("Fondo.jpg") && r.ok)) {
+    gameArea.classList.add("noimg-bg");
+  }
+
+  if (failed.length) {
+    const warn = document.createElement("div");
+    warn.className = "img-warning";
+    warn.textContent = "⚠️ Faltan imágenes: " + failed.join(", ");
+    document.body.appendChild(warn);
+    // auto-ocultar a los 6s
+    setTimeout(() => warn.remove(), 6000);
+  }
+}
+// Lanza la verificación (no bloquea el juego)
+checkAssets();
 
 /* ---------- Inicio ---------- */
 playBtn.addEventListener("click", () => {
@@ -29,7 +59,6 @@ playBtn.addEventListener("click", () => {
 });
 
 function startGame() {
-  // reset estado
   score = 0;
   scoreText.innerText = "Puntuación: " + score;
   gameOverLock = false;
@@ -37,10 +66,7 @@ function startGame() {
   leftPressed = rightPressed = false;
   playerX = 50;
   player.style.left = playerX + "px";
-
-  // reiniciar animación del enemigo
   restartObstacle();
-
   running = true;
 }
 
@@ -53,7 +79,7 @@ document.addEventListener("keydown", (event) => {
   if (event.code === "ArrowLeft")  leftPressed  = true;
   if (event.code === "ArrowRight") rightPressed = true;
 
-  // Permite arrancar también con Enter/Espacio desde el overlay
+  // Arrancar con Enter/Espacio desde el overlay
   if ((event.code === "Enter" || event.code === "Space") && startScreen.classList.contains("visible")) {
     event.preventDefault();
     playBtn.click();
@@ -64,7 +90,7 @@ document.addEventListener("keyup", (event) => {
   if (event.code === "ArrowRight") rightPressed = false;
 });
 
-/* ---------- Controles táctiles ---------- */
+/* ---------- Controles táctiles (móvil) ---------- */
 function bindHold(btn, on, off){
   const start = (e)=>{ e.preventDefault(); on(); };
   const end   = (e)=>{ e.preventDefault(); off(); };
@@ -75,12 +101,9 @@ function bindHold(btn, on, off){
   btn.addEventListener("mouseup",    end);
   btn.addEventListener("mouseleave", end);
 }
-
 bindHold(btnLeft,  ()=> leftPressed = true,  ()=> leftPressed = false);
 bindHold(btnRight, ()=> rightPressed = true, ()=> rightPressed = false);
-bindHold(btnJump,  ()=>{
-  if (running && !isJumping) jump();
-}, ()=>{ /* no-op */ });
+bindHold(btnJump,  ()=>{ if (running && !isJumping) jump(); }, ()=>{});
 
 /* ---------- Movimiento del oso ---------- */
 let lastTime = 0;
@@ -115,8 +138,7 @@ function jump() {
 /* Reinicia animación del obstáculo (desde la derecha) */
 function restartObstacle() {
   obstacle.style.animation = "none";
-  // forzamos reflow y restauramos
-  void obstacle.offsetWidth;
+  void obstacle.offsetWidth; // reflow
   obstacle.style.animation = "moveObstacle 2s linear infinite";
 }
 
@@ -136,18 +158,17 @@ function isColliding(a, b) {
 function isStomp(playerEl, obstEl) {
   const rp = playerEl.getBoundingClientRect();
   const ro = obstEl.getBoundingClientRect();
-  const verticalOK = rp.bottom <= ro.top + 18;         // pies del oso por encima del "techo" de la roca ± margen
+  const verticalOK = rp.bottom <= ro.top + 18;
   const horizontalOverlap = !(rp.right < ro.left || rp.left > ro.right);
   return isJumping && verticalOK && horizontalOverlap;
 }
 
-/* ---------- Bucle del juego (puntuación + colisiones) ---------- */
+/* ---------- Bucle del juego ---------- */
 setInterval(() => {
   if (!running) return;
 
   if (isColliding(player, obstacle)) {
     if (isStomp(player, obstacle)) {
-      // Derrota del enemigo: sumar puntos y reiniciar enemigo
       score += 50;
       scoreText.innerText = "Puntuación: " + score;
 
@@ -166,7 +187,7 @@ setInterval(() => {
       scoreText.innerText = "Puntuación: " + score;
       setTimeout(() => {
         gameOverLock = false;
-        startScreen.classList.add("visible"); // volver a inicio
+        startScreen.classList.add("visible");
       }, 250);
     }
   } else {
