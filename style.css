@@ -35,10 +35,13 @@ h1 { margin: 16px 0 8px; }
   margin: 20px auto;
   width: 600px;
   height: 200px;
-  background: #fff url("img/Fondo.jpg") center/cover no-repeat; /* ← fondo desde /img */
+  background: #fff url("img/Fondo.jpg") center/cover no-repeat;
   border: 2px solid #333;
   overflow: hidden;
 }
+
+/* Si falta el fondo, al menos deja un color sutil */  /* NUEVO */
+.game.noimg-bg { background: #e8f7ff; }
 
 /* --- JUGADOR (OSO) --- */
 #player {
@@ -47,11 +50,13 @@ h1 { margin: 16px 0 8px; }
   left: 50px;
   width: 60px;
   height: 60px;
-  background-image: url("img/Oso.png"); /* ← desde /img */
+  background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
   transform-origin: bottom center;
+  background-color: #8bc34a33; /* NUEVO: color de respaldo si no carga la imagen */
+  outline: 0;                   /* NUEVO */
 }
 
 /* --- OBSTÁCULO (ROCA) --- */
@@ -61,11 +66,13 @@ h1 { margin: 16px 0 8px; }
   right: -60px;
   width: 60px;
   height: 60px;
-  background-image: url("img/Roca.png"); /* ← desde /img */
+  background-image: url("img/Roca.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
   animation: moveObstacle 2s linear infinite;
+  background-color: #f4433633; /* NUEVO: color de respaldo si no carga la imagen */
+  outline: 0;                   /* NUEVO */
 }
 
 @keyframes moveObstacle {
@@ -95,4 +102,13 @@ h1 { margin: 16px 0 8px; }
 
 @media (min-width: 800px) {
   .controls { display: none; }
+}
+
+/* Aviso de error de imágenes (banner) */               /* NUEVO */
+.img-warning {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: 10px; z-index: 2000;
+  background: #fff3cd; color:#7a5d00; border:1px solid #ffe08a;
+  padding: 8px 12px; border-radius: 8px; font-size: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
 }
