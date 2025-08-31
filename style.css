@@ -4,102 +4,63 @@ html, body { height: 100%; margin:0; }
 body { font-family: system-ui, -apple-system, Arial, sans-serif; background:#eaf2f7; color:#222; }
 .centered { min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:16px; }
 .title { margin:0 0 12px; text-align:center; }
-
-/* Botones genéricos */
-.btn {
-  display:inline-block; padding:12px 20px; border-radius:12px; border:2px solid #333;
-  background:#fff; cursor:pointer; font-weight:600; text-decoration:none;
-  transition: transform .06s ease, box-shadow .2s ease;
-  box-shadow: 0 4px 0 #333;
-}
-.btn:hover { transform: translateY(-1px); }
-.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #333; }
+.start-card { width:min(720px,92vw); background:#fff; border:2px solid #333; border-radius:12px; padding:32px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.08); }
+.subtitle { color:#555; }
+.btn { display:inline-block; padding:12px 20px; border-radius:12px; border:2px solid #333; background:#fff; cursor:pointer; font-weight:600; text-decoration:none; box-shadow:0 4px 0 #333; }
+.btn.primary { background:#2ecc71; border-color:#2ecc71; color:#fff; box-shadow:0 4px 0 #239d57; }
 .btn.ghost { background:transparent; }
 
-/* --- Zona de juego con parallax --- */
+/* --- Game area with PARALLAX --- */
 .game-wrapper { display:flex; align-items:center; justify-content:center; width:100%; }
 .game {
   position:relative; width:min(1100px,95vw); height:520px;
   background:url("img/Fondo.jpg") repeat-x bottom;
   background-size:auto 100%;
-  border:3px solid #333; border-radius:12px; overflow:hidden;
-  box-shadow:0 10px 30px rgba(0,0,0,.08);
-}
-
-.world {
-  position:absolute; left:0; top:0; width:12000px; height:100%;
-  transform:translateX(0); will-change:transform; pointer-events:none;
+  border:3px solid #333; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.08);
 }
 
 /* HUD */
 .hud {
   position:absolute; left:10px; top:10px; z-index:50;
-  display:flex; gap:10px; align-items:center; pointer-events:none;
+  display:flex; gap:10px; align-items:center;
+  pointer-events:none;
 }
 .hud-item {
   display:flex; align-items:center; gap:6px;
   background: rgba(255,255,255,.9);
-  border:2px solid #333; border-radius:10px; padding:6px 10px;
+  border:2px solid #333;
+  border-radius:10px;
+  padding:6px 10px;
   box-shadow:0 4px 10px rgba(0,0,0,.15);
   opacity:0; transform: translateY(-6px);
   transition: opacity .25s ease, transform .25s ease;
 }
 .hud-item.active { opacity:1; transform: translateY(0); }
-.hud-icon { width:22px; height:22px; background: url("img/Panal.png") center/contain no-repeat; }
+.hud-icon {
+  width:22px; height:22px;
+  background: url("img/Panal.png") center/contain no-repeat;
+}
 .hud-text { font-weight:700; }
 
-/* Entidades */
-.player, .block, .honey, .cave { position:absolute; background-size:contain; background-repeat:no-repeat; background-position:bottom center; }
+.world { position:absolute; left:0; top:0; width:12000px; height:100%; transform:translateX(0); will-change:transform; pointer-events:none; }
 
-/* Oso: pies pegados al suelo y volteo */
-.player {
-  width:90px; height:90px; left:120px; bottom:0;
-  background-image:url("img/Oso.png");
-  transition: transform .08s linear;
-  transform-origin: bottom center; /* al escalar, no se despega del suelo */
-}
+/* Entities */
+.player, .block, .honey, .cave { position:absolute; background-size:contain; background-repeat:no-repeat; background-position:bottom center; }
+.player { width:90px; height:90px; left:120px; bottom:0; background-image:url("img/Oso.png"); transition:transform .08s linear; }
 .player.big { transform: scale(1.45); }
 .player.facing-left { transform: scaleX(-1); }
 .player.facing-left.big { transform: scale(-1, 1.45); }
 
-/* Espada (se inyecta vía JS como hijo .sword) */
-.player { position: relative; }
-.player .sword {
-  position:absolute;
-  width:82px; height:82px;
-  bottom:28px; left:66px;
-  background: url("img/Espada.gif") center/contain no-repeat;
-  opacity:0; transform: translateY(6px) rotate(12deg);
-  transition: opacity .06s ease, transform .06s ease;
-  pointer-events:none;
-}
-.player.attacking .sword { opacity:1; transform: translateY(0) rotate(-12deg); }
-.player.facing-left .sword { left:auto; right:66px; transform: scaleX(-1) translateY(6px) rotate(12deg); }
-.player.facing-left.attacking .sword { transform: scaleX(-1) translateY(0) rotate(-12deg); }
-
-/* Bloques y panal */
 .block { width:60px; height:60px; bottom:130px; background-image:url("img/Bloque.png"); }
 .block.broken { opacity:.35; filter:grayscale(.8); }
 .honey { width:48px; height:48px; background-image:url("img/Panal.png"); }
-
-/* Cueva */
 .cave { width:180px; height:160px; bottom:0; background-image:url("img/Cueva.png"); }
 
-/* Rocas (más pequeñas que el oso) */
 #runnerRocks { position:absolute; inset:0; pointer-events:none; }
-.runner-rock {
-  position:absolute; bottom:0; width:70px; height:70px;
-  background:url("img/Roca.png") bottom center / contain no-repeat;
-}
+.runner-rock { position:absolute; bottom:0; width:90px; height:90px; background:url("img/Roca.png") bottom center / contain no-repeat; }
 
 /* Overlays */
-.overlay {
-  position:absolute; inset:0; display:none; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.35); z-index:999; pointer-events:auto;
-}
+.overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.35); z-index:999; pointer-events:auto; }
 .overlay.visible { display:flex; }
-.overlay-box {
-  background:#fff; border:2px solid #333; border-radius:12px; padding:24px 28px;
-  width:min(460px,90%); text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.2);
-}
+.overlay-box { background:#fff; border:2px solid #333; border-radius:12px; padding:24px 28px; width:min(460px,90%); text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.2); }
 .overlay-actions { display:flex; gap:12px; justify-content:center; margin-top:10px; }
