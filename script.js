@@ -1,210 +1,368 @@
-// Elements
-const viewport = document.getElementById('viewport');
-const world = document.getElementById('world');
-const playerEl = document.getElementById('player');
-const blocksEl = document.getElementById('blocks');
-const itemsEl = document.getElementById('items');
-const caveEl = document.getElementById('cave');
-const runnerRocksEl = document.getElementById('runnerRocks');
-const startOverlay = document.getElementById('startOverlay');
-const startBtn = document.getElementById('startBtn');
-const gameOverOverlay = document.getElementById('gameOverOverlay');
-const gameOverTitle = document.getElementById('gameOverTitle');
-const retryBtn = document.getElementById('retryBtn');
-const honeyHUD = document.getElementById('honeyHUD');
+(() => {
+  // -------- Canvas & escala HDPI ----------
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let vw = 0, vh = 0, dpr = 1;
 
-// Config (más fácil)
-const LEVEL_WIDTH = 12000;
-const GROUND_Y = 0;
-const GRAVITY = 1900;
-const RUN_SPEED = 100;
-const JUMP_VELOCITY = 780; // salto más alto
-const ROCK_SPEED = 105;    // rocas más lentas
-const PARALLAX_FACTOR = 0.3;
-
-// Player
-const player = { 
-  x:120, y:GROUND_Y, vx:0, vy:0, 
-  width:90, height:90, 
-  onGround:true, big:false, facing:1 
-};
-
-// Utils
-function elem(tag, className, style={}) { 
-  const el = document.createElement(tag); 
-  if (className) el.className = className; 
-  Object.assign(el.style, style); 
-  return el; 
-}
-
-// Level: blocks + cave
-const blocks = [];
-const items  = [];
-function placeBlock(x) { 
-  const el = elem('div','block',{ left:x+'px' }); 
-  blocksEl.appendChild(el); 
-  blocks.push({ x, y:130, width:60, height:60, el, broken:false }); 
-}
-function placeHoney(x,y) { 
-  const el = elem('div','honey',{ left:x+'px', bottom:y+'px' }); 
-  itemsEl.appendChild(el); 
-  const it={ x, y, width:48, height:48, el, vy:0, onGround:false, taken:false }; 
-  items.push(it); 
-  return it; 
-}
-
-for (let x=500; x<LEVEL_WIDTH-800; x+=900) placeBlock(x);
-const caveX = LEVEL_WIDTH - 300; 
-caveEl.style.left = caveX + 'px';
-
-// Runner rocks
-const runnerRocks = [];
-function spawnRock(x) { 
-  const el = elem('div','runner-rock',{ left:x+'px' }); 
-  runnerRocksEl.appendChild(el); 
-  const r={ x, y:0, width:90, height:90, el }; 
-  runnerRocks.push(r); 
-}
-spawnRock(viewport.clientWidth + 150);
-spawnRock(viewport.clientWidth + 600);
-spawnRock(viewport.clientWidth + 1000);
-
-// Camera + Parallax
-function updateCamera() {
-  const center = Math.min(Math.max(player.x, viewport.clientWidth/2), LEVEL_WIDTH - viewport.clientWidth/2);
-  const offset = -center + viewport.clientWidth/2;
-  world.style.transform = `translateX(${offset}px)`;
-  // parallax background
-  const parallaxX = -player.x * PARALLAX_FACTOR;
-  viewport.style.backgroundPosition = `${parallaxX}px 0px`;
-}
-
-// Input
-const keys = { left:false, right:false, jump:false };
-document.addEventListener('keydown', e => {
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
-  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-  if (e.code === 'Space') keys.jump = true;
-  if ((e.code === 'Enter' || e.code === 'Space') && startOverlay.classList.contains('visible')) { 
-    e.preventDefault(); startGame(); 
+  function resize() {
+    dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+    vw = window.innerWidth; vh = window.innerHeight;
+    canvas.width = Math.floor(vw * dpr);
+    canvas.height = Math.floor(vh * dpr);
+    canvas.style.width = vw + 'px';
+    canvas.style.height = vh + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Actualiza suelo relativo a viewport
+    floorY = Math.floor(vh * 0.82);
   }
-});
-document.addEventListener('keyup', e => {
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
-  if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
-  if (e.code === 'Space') keys.jump = false;
-});
+  window.addEventListener('resize', resize, { passive: true });
+  resize();
 
-startBtn.addEventListener('click', startGame);
-retryBtn.addEventListener('click', () => location.reload());
+  // -------- Constantes del juego ----------
+  const GRAV = 1200;           // px/s^2
+  const FRICTION = 0.86;       // atenuación horizontal cuando no pulsas
+  const MAX_DX = 220;          // vel horizontal máx
+  const JUMP_V = 420;          // impulso de salto
+  const WALK_SPEED = 120;      // velocidad al pulsar ←/→
+  const TARGET_SECONDS = 120;  // ~2 minutos
+  const WORLD_LEN = Math.round(WALK_SPEED * TARGET_SECONDS); // ≈ 14400 px
 
-let running = false;
-function startGame() {
-  startOverlay.classList.remove('visible');
-  gameOverOverlay.classList.remove('visible');
-  running = true;
-}
+  // Suelo/plataformas muy simples (un plano)
+  let floorY = Math.floor(vh * 0.82);
+  const groundHeight = Math.max(32, Math.floor(vh * 0.18));
 
-// AABB helpers
-function aabb(a,b){return !(a.x+a.width<b.x||a.x>b.x+b.width||a.y+a.height<b.y||a.y>b.y+b.height);}
-function playerRect(){ 
-  const w = player.width * (player.big?1.45:1); 
-  const h = player.height * (player.big?1.45:1); 
-  return { x:player.x, y:player.y, width:w, height:h }; 
-}
-function setHUDActive(active){ honeyHUD.classList.toggle('active', !!active); }
+  // -------- Jugador ----------
+  const player = {
+    x: 40,
+    y: floorY - 48,
+    w: 28,
+    h: 48,
+    vx: 0,
+    vy: 0,
+    onGround: true,
+    alive: true,
+    reachedGoal: false
+  };
 
-let last = 0;
-function loop(ts) {
-  if (!last) last = ts;
-  const dt = Math.min((ts - last)/1000, 0.033);
-  last = ts;
+  // -------- Enemigos (patrullas simples) ----------
+  function makeEnemy(x, y, minX, maxX, speed) {
+    return { x, y, w: 28, h: 28, vx: speed, minX, maxX, speed: Math.abs(speed) };
+  }
+  const enemies = [];
+  // Distribuye enemigos a lo largo del camino
+  for (let i = 1; i <= 24; i++) {
+    const seg = (WORLD_LEN / 24) * i;
+    const patrolWidth = 140 + (i % 3) * 40;
+    const minX = seg - 90;
+    const maxX = seg + patrolWidth - 90;
+    enemies.push(makeEnemy(minX + 50, floorY - 28, minX, maxX, 40 + (i % 3) * 20));
+  }
 
-  if (running) {
-    // Horizontal
-    let vx = 0;
-    if (keys.left) vx -= RUN_SPEED;
-    if (keys.right) vx += RUN_SPEED;
-    player.vx = vx;
-    if (vx !== 0) player.facing = (vx > 0 ? 1 : -1);
+  // -------- Meta ----------
+  const goal = {
+    x: WORLD_LEN - 40,
+    y: floorY - 64,
+    w: 24,
+    h: 64
+  };
 
-    // Flip visual
-    playerEl.classList.toggle('facing-left', player.facing < 0);
+  // -------- Cámara ----------
+  let camX = 0;
+  function updateCamera() {
+    const leftMargin = vw * 0.33;
+    camX = Math.max(0, Math.min(player.x - leftMargin, WORLD_LEN - vw));
+  }
 
-    // Jump
-    if (keys.jump && player.onGround) { player.vy = JUMP_VELOCITY; player.onGround = false; }
+  // -------- Input: teclado ----------
+  const keys = { left: false, right: false, jump: false };
+  function setKey(code, pressed) {
+    if (code === 'ArrowLeft' || code === 'KeyA') keys.left = pressed;
+    if (code === 'ArrowRight' || code === 'KeyD') keys.right = pressed;
+    if (code === 'Space' || code === 'ArrowUp' || code === 'KeyW') {
+      if (pressed) keys.jump = true; // se consume en el update
+    }
+  }
+  window.addEventListener('keydown', (e) => {
+    if (['ArrowLeft','ArrowRight','Space','ArrowUp'].includes(e.code)) e.preventDefault();
+    setKey(e.code, true);
+  });
+  window.addEventListener('keyup', (e) => setKey(e.code, false));
 
-    // Physics
-    player.vy -= GRAVITY * dt;
+  // -------- Input: táctil (D-pad y salto) ----------
+  const tc = document.getElementById('touchControls');
+  const btnLeft = document.getElementById('btnLeft');
+  const btnRight = document.getElementById('btnRight');
+  const btnJump = document.getElementById('btnJump');
+
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (isTouch) tc.classList.add('visible');
+
+  // helpers para botones táctiles
+  function bindHold(btn, onDown, onUp) {
+    const down = (e) => { e.preventDefault(); onDown(); btn.setPointerCapture?.(e.pointerId); };
+    const up = (e) => { e.preventDefault(); onUp(); };
+    btn.addEventListener('pointerdown', down);
+    btn.addEventListener('pointerup', up);
+    btn.addEventListener('pointercancel', up);
+    btn.addEventListener('pointerleave', up);
+  }
+  bindHold(btnLeft, () => keys.left = true, () => keys.left = false);
+  bindHold(btnRight, () => keys.right = true, () => keys.right = false);
+  bindHold(btnJump, () => keys.jump = true, () => { /* nada en up */ });
+
+  // -------- HUD y Overlays ----------
+  const overlay = document.getElementById('overlay');
+  const overlayEnd = document.getElementById('overlayEnd');
+  const endTitle = document.getElementById('endTitle');
+  const endSubtitle = document.getElementById('endSubtitle');
+  const btnStart = document.getElementById('btnStart');
+  const btnRestart = document.getElementById('btnRestart');
+  const timerEl = document.getElementById('timer');
+  const progressFill = document.getElementById('progress-fill');
+
+  let started = false;
+  let startTime = 0;
+  let elapsed = 0;
+  let rafId = 0;
+
+  btnStart.addEventListener('click', startGame);
+  btnRestart.addEventListener('click', () => {
+    overlayEnd.hidden = true;
+    resetGame();
+    startGame();
+  });
+
+  function startGame() {
+    overlay.classList.remove('show');
+    if (!started) {
+      started = true;
+      startTime = performance.now();
+      lastT = startTime;
+      loop();
+    }
+  }
+
+  function resetGame() {
+    // resetea estado
+    player.x = 40;
+    player.y = floorY - player.h;
+    player.vx = 0; player.vy = 0;
+    player.onGround = true;
+    player.alive = true;
+    player.reachedGoal = false;
+    enemies.forEach((e, i) => {
+      e.x = e.minX + 50;
+      e.vx = Math.sign(e.vx || 1) * e.speed;
+    });
+    camX = 0; elapsed = 0;
+  }
+
+  // -------- Lógica del juego ----------
+  let lastT = performance.now();
+  function loop(now) {
+    rafId = requestAnimationFrame(loop);
+    const t = now ?? performance.now();
+    let dt = (t - lastT) / 1000;
+    lastT = t;
+    if (dt > 0.05) dt = 0.05; // cap a 50 ms para estabilidad
+
+    if (!player.alive || player.reachedGoal) return endRound();
+
+    // Entrada horizontal
+    if (keys.left && !keys.right) player.vx = -WALK_SPEED;
+    else if (keys.right && !keys.left) player.vx = WALK_SPEED;
+    else player.vx *= FRICTION;
+
+    // Salto (consumible)
+    if (keys.jump && player.onGround) {
+      player.vy = -JUMP_V;
+      player.onGround = false;
+    }
+    keys.jump = false;
+
+    // Física
+    player.vx = Math.max(-MAX_DX, Math.min(MAX_DX, player.vx));
+    player.vy += GRAV * dt;
     player.x += player.vx * dt;
     player.y += player.vy * dt;
 
-    // Limits
+    // Colisión con suelo/plataforma única
+    const groundTop = floorY - 0;
+    if (player.y + player.h >= groundTop) {
+      player.y = groundTop - player.h;
+      player.vy = 0;
+      player.onGround = true;
+    }
+
+    // Límites del mundo
     if (player.x < 0) player.x = 0;
-    if (player.x > LEVEL_WIDTH - player.width) player.x = LEVEL_WIDTH - player.width;
-    if (player.y < GROUND_Y) { player.y = GROUND_Y; player.vy = 0; player.onGround = true; }
+    if (player.x + player.w > WORLD_LEN) player.x = WORLD_LEN - player.w;
 
-    // Blocks: break from below -> drop honey
-    const pR = playerRect();
-    for (const bl of blocks) {
-      const bR = { x: bl.x, y: bl.y, width: bl.width, height: bl.height };
-      if (!bl.broken && aabb(pR, bR)) {
-        const playerTop = player.y + (player.big ? player.height*1.45 : player.height);
-        if (player.vy > 0 && playerTop >= bl.y && (playerTop - bl.y) < 36) {
-          bl.broken = true; bl.el.classList.add('broken');
-          placeHoney(bl.x + 6, bl.y + bl.height + 4);
-        }
+    // Enemigos: patrulla y colisiones
+    enemies.forEach(e => {
+      e.x += e.vx * dt;
+      if (e.x < e.minX) { e.x = e.minX; e.vx = e.speed; }
+      if (e.x + e.w > e.maxX) { e.x = e.maxX - e.w; e.vx = -e.speed; }
+      if (aabb(player, e)) {
+        // No hay "pisar"; cualquier toque = KO
+        player.alive = false;
       }
+    });
+
+    // Meta
+    if (aabb(player, goal)) {
+      player.reachedGoal = true;
     }
 
-    // Items: fall to ground and pickup
-    for (const it of items) {
-      if (it.taken) continue;
-      if (!it.onGround) {
-        it.vy -= GRAVITY * 0.6 * dt;
-        it.y += it.vy * dt;
-        if (it.y < GROUND_Y) { it.y = GROUND_Y; it.vy = 0; it.onGround = true; }
-      }
-      const iR = { x: it.x, y: it.y, width: it.width, height: it.height };
-      if (aabb(playerRect(), iR)) {
-        it.taken = true; it.el.remove();
-        player.big = true; playerEl.classList.add('big'); setHUDActive(true);
-      }
-      if (it.el) { it.el.style.left = it.x + 'px'; it.el.style.bottom = it.y + 'px'; }
-    }
+    // HUD
+    elapsed = (t - startTime) / 1000;
+    timerEl.textContent = formatTime(elapsed);
+    progressFill.style.width = `${Math.min(100, ((player.x + player.w) / WORLD_LEN) * 100)}%`;
 
-    // Runner rocks
-    for (const r of runnerRocks) {
-      r.x -= ROCK_SPEED * dt;
-      if (r.x < -120) { r.x = viewport.clientWidth + Math.random()*600 + 260; }
-      const center = Math.min(Math.max(player.x, viewport.clientWidth/2), LEVEL_WIDTH - viewport.clientWidth/2);
-      const offset = -center + viewport.clientWidth/2;
-      const pScreen = { x: player.x + offset, y: player.y, width: player.width*(player.big?1.45:1), height: player.height*(player.big?1.45:1) };
-      const rRect   = { x: r.x, y: 0, width: r.width, height: r.height };
-      const coll = !((pScreen.x + pScreen.width - 12) < (rRect.x + 12) ||
-                     (pScreen.x + 12) > (rRect.x + rRect.width - 12) ||
-                     (pScreen.y + pScreen.height - 12) < (rRect.y + 12) ||
-                     (pScreen.y + 12) > (rRect.y + rRect.height - 12));
-      if (coll) {
-        if (player.big) { player.big = false; playerEl.classList.remove('big'); setHUDActive(false); }
-        else { running = false; gameOverTitle.textContent = '¡Ay! Te golpeó una roca'; gameOverOverlay.classList.add('visible'); }
-        r.x = -140;
-      }
-      r.el.style.left = r.x + 'px';
+    // Cámara y render
+    updateCamera();
+    render();
+  }
+
+  function endRound() {
+    // Cancela bucle y muestra overlay final una sola vez
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    overlayEnd.hidden = false;
+    const timeStr = formatTime(elapsed);
+    if (player.reachedGoal) {
+      endTitle.textContent = '¡Has llegado a la meta!';
+      endSubtitle.textContent = `Tiempo: ${timeStr}`;
+    } else {
+      endTitle.textContent = '¡Game Over!';
+      endSubtitle.textContent = `Duraste ${timeStr}. Inténtalo de nuevo.`;
     }
   }
 
-  // Render
-  playerEl.style.left = player.x + 'px';
-  playerEl.style.bottom = player.y + 'px';
-  for (const b of blocks) b.el.style.bottom = b.y + 'px';
+  // -------- Render ----------
+  function render() {
+    // Fondo cielo
+    ctx.clearRect(0, 0, vw, vh);
 
-  // Win condition
-  const caveRect = { x: caveX, y: 0, width: 180, height: 160 };
-  if (aabb(playerRect(), caveRect)) { running = false; gameOverTitle.textContent = '¡Llegaste a tu cueva! 🥳'; gameOverOverlay.classList.add('visible'); }
+    // Parallax simple (colinas)
+    drawHills();
 
-  updateCamera();
-  requestAnimationFrame(loop);
-}
+    // Suelo
+    ctx.fillStyle = '#3b8c2a';
+    ctx.fillRect(-camX, floorY, Math.max(vw, WORLD_LEN) + camX + 200, groundHeight);
+    // Línea del suelo (borde)
+    ctx.fillStyle = '#2a5d1e';
+    ctx.fillRect(-camX, floorY, Math.max(vw, WORLD_LEN) + camX + 200, 6);
 
-requestAnimationFrame(loop);
+    // Meta (bandera)
+    drawGoal(goal);
+
+    // Enemigos
+    enemies.forEach(e => drawEnemy(e));
+
+    // Jugador
+    drawPlayer(player);
+  }
+
+  function drawHills() {
+    const sky = ctx.createLinearGradient(0, 0, 0, vh);
+    sky.addColorStop(0, '#87ceeb');
+    sky.addColorStop(1, '#b8ecff');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, vw, vh);
+
+    // colinas parallax
+    const parLayers = [
+      { h: vh*0.40, y: vh*0.75, speed: 0.2 },
+      { h: vh*0.30, y: vh*0.82, speed: 0.4 }
+    ];
+    ctx.fillStyle = '#7bd36a';
+    parLayers.forEach((l, idx) => {
+      const offset = - (camX * l.speed) % 600;
+      for (let x = offset - 600; x < vw + 600; x += 600) {
+        ctx.beginPath();
+        ctx.moveTo(x, l.y);
+        ctx.quadraticCurveTo(x+150, l.y - l.h, x+300, l.y);
+        ctx.quadraticCurveTo(x+450, l.y + l.h*0.2, x+600, l.y);
+        ctx.closePath();
+        ctx.globalAlpha = idx === 0 ? 0.35 : 0.5;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    });
+  }
+
+  function drawPlayer(p) {
+    const x = Math.round(p.x - camX), y = Math.round(p.y);
+    // cuerpo
+    ctx.fillStyle = '#ffce54';
+    ctx.fillRect(x, y, p.w, p.h);
+    // gorra
+    ctx.fillStyle = '#ff6b57';
+    ctx.fillRect(x - 2, y - 8, p.w + 4, 10);
+    // ojos
+    ctx.fillStyle = '#222';
+    ctx.fillRect(x + 6, y + 14, 4, 6);
+    ctx.fillRect(x + p.w - 10, y + 14, 4, 6);
+    // sombra suelo
+    if (p.onGround) {
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x + 4, floorY - 6, p.w - 8, 4);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawEnemy(e) {
+    const x = Math.round(e.x - camX), y = Math.round(e.y);
+    ctx.fillStyle = '#6a5acd';
+    ctx.fillRect(x, y, e.w, e.h);
+    // ojos "enfadados"
+    ctx.fillStyle = '#111';
+    ctx.fillRect(x + 6, y + 8, 6, 6);
+    ctx.fillRect(x + e.w - 12, y + 8, 6, 6);
+    // dientes
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x + 8, y + e.h - 8, e.w - 16, 4);
+  }
+
+  function drawGoal(g) {
+    const x = Math.round(g.x - camX);
+    // poste
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(x, g.y - 4, 6, g.h + 4);
+    // bandera
+    ctx.fillStyle = '#4cd6ff';
+    ctx.beginPath();
+    ctx.moveTo(x+6, g.y + 8);
+    ctx.lineTo(x+6 + 36, g.y + 18);
+    ctx.lineTo(x+6, g.y + 28);
+    ctx.closePath();
+    ctx.fill();
+    // base
+    ctx.fillStyle = '#5c3b1a';
+    ctx.fillRect(x - 6, g.y + g.h, 18, 10);
+  }
+
+  // -------- Utilidades ----------
+  function aabb(a, b) {
+    return (a.x < b.x + b.w &&
+            a.x + a.w > b.x &&
+            a.y < b.y + b.h &&
+            a.y + a.h > b.y);
+  }
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const ss = Math.floor(s % 60);
+    return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  }
+
+  // Evita scroll con barra espaciadora cuando el juego está activo
+  window.addEventListener('keydown', (e) => {
+    if (['Space','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault();
+  });
+
+  // Para poder reiniciar con teclado si quieres
+  window.addEventListener('keypress', (e) => {
+    if (!started && e.code === 'Enter') startGame();
+  });
+})();
