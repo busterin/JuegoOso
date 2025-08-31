@@ -37,7 +37,6 @@ let worldX = 0;
 const RIGHT_FRACTION_WHEN_TRAVELING = 0.65;
 
 /* Ataque */
-let attacking = false;
 let attackCooldownUntil = 0;
 const ATTACK_COOLDOWN = 220;
 
@@ -50,16 +49,16 @@ playBtn.addEventListener("click", () => {
 function startGame() {
   running = true;
   isJumping = false;
-  attacking = false;
   leftPressed = rightPressed = false;
   playerX = 50; worldX = 0; lastMoveDir = 1;
   player.style.left = playerX + "px";
   cave.style.display = "none";
   gameOverLock = false;
 
+  // Reset visual espada
   swordEl.style.opacity = "0";
-  swordEl.className = "sword";
   swordEl.style.left = "-9999px";
+  swordEl.classList.remove("swing-right","swing-left");
 
   restartObstacle();
 }
@@ -157,24 +156,27 @@ function jump() {
   setTimeout(() => { player.classList.remove("jump"); isJumping = false; }, 550);
 }
 
-/* ---------- Ataque ---------- */
+/* ---------- Ataque (visual + hitbox virtual) ---------- */
 function doAttack(){
   if (!running) return;
   const now = performance.now();
   if (now < attackCooldownUntil) return;
-
   attackCooldownUntil = now + ATTACK_COOLDOWN;
-  attacking = true;
 
-  swordEl.classList.remove("swing-right","swing-left");
-  void swordEl.offsetWidth; // reset anim
+  // Posición REAL del oso desde el DOM (evita desajustes)
+  const px = player.offsetLeft;
 
-  const x = lastMoveDir > 0 ? (playerX + 58) : (playerX - 48);
+  // Coloca la espada visual y la hace visible explícitamente
+  const x = lastMoveDir > 0 ? (px + 58) : (px - 48);
   swordEl.style.left = `${x}px`;
   swordEl.style.bottom = "18px";
+  swordEl.style.opacity = "1";       // 👈 forzamos visibilidad
+  swordEl.style.display = "block";   // 👈 por si algún estilo la ocultara
+  swordEl.classList.remove("swing-right","swing-left");
+  void swordEl.offsetWidth; // reset anim
   swordEl.classList.add(lastMoveDir > 0 ? "swing-right" : "swing-left");
 
-  // hitbox virtual
+  // Hitbox virtual delante del oso para el daño
   const pr = player.getBoundingClientRect();
   const hitbox = (lastMoveDir > 0)
     ? { left: pr.right, right: pr.right + 60, top: pr.bottom - 70, bottom: pr.bottom - 20 }
@@ -184,7 +186,10 @@ function doAttack(){
   const overlaps = !(hitbox.right < or.left || hitbox.left > or.right || hitbox.bottom < or.top || hitbox.top > or.bottom);
   if (overlaps) destroyRock();
 
-  setTimeout(()=>{ attacking = false; }, 200);
+  // Oculta la espada tras el swing
+  setTimeout(() => {
+    swordEl.style.opacity = "0";
+  }, 200);
 }
 
 /* ---------- Obstáculo ---------- */
@@ -203,7 +208,7 @@ function destroyRock(){
   }, 280);
 }
 
-/* Colisiones normales */
+/* Colisiones normales (pisar) */
 function isColliding(a, b) {
   const ra = a.getBoundingClientRect();
   const rb = b.getBoundingClientRect();
