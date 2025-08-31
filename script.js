@@ -28,7 +28,7 @@ const JUMP_BOOST_TIME = 360; // ms de impulso
 let jumpBoostVX = 0;
 let jumpBoostUntil = 0;
 
-// Dirección “mirando” del oso: 1 derecha, -1 izquierda
+// Dirección “mirando” del oso: 1 derecha, -1 izquierda (solo para salto)
 let lastMoveDir = 1;
 
 /* --- Mundo de 2 minutos caminando recto --- */
@@ -98,9 +98,6 @@ function moveLoop(t){
 
   if (running){
     const rect = gameArea.getBoundingClientRect();
-
-    // Volteo visual del oso según la última dirección
-    player.classList.toggle("facing-left", lastMoveDir < 0);
 
     // Velocidad local del oso (en pantalla)
     let vx = 0;
