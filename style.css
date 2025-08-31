@@ -58,18 +58,18 @@ h1 { margin: 16px 0 8px; }
 /* --- ESPADA desacoplada (visual) --- */
 #sword {
   position: absolute;
-  bottom: 18px;
-  left: -9999px; /* se recoloca por JS */
-  width: 70px;
-  height: 70px;
+  bottom: 18px;            /* altura “mano” aprox */
+  left: -9999px;           /* se recoloca por JS */
+  width: 70px; height: 70px;
   background: url("img/Espada.png") center/contain no-repeat;
-  opacity: 0;
+  opacity: 0;              /* visible solo al atacar */
+  display: block;          /* aseguramos que no esté hidden */
   pointer-events: none;
   z-index: 3;
   transform-origin: 10% 80%;
 }
 
-/* Swing al atacar */
+/* Swing al atacar (solo efecto visual) */
 #sword.swing-right {
   animation: swingRight 180ms ease-out forwards;
   opacity: 1;
@@ -92,8 +92,7 @@ h1 { margin: 16px 0 8px; }
   position: absolute;
   bottom: 0;
   right: -50px;
-  width: 50px;
-  height: 50px;
+  width: 50px; height: 50px;
   background-image: url("img/Roca.png");
   background-size: contain;
   background-repeat: no-repeat;
@@ -121,8 +120,7 @@ h1 { margin: 16px 0 8px; }
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 100px;
-  height: 100px;
+  width: 100px; height: 100px;
   background: url("img/Cueva.png") bottom center / contain no-repeat;
   display: none;
 }
