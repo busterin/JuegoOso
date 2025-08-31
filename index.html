@@ -7,20 +7,11 @@
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body class="centered">
-
-  <!-- Pantalla de inicio -->
-  <div id="homeScreen" class="start-card">
-    <h1 class="title">Juego Oso 🐻</h1>
-    <p class="subtitle">Mover: A/D o ←/→ · Saltar: ESPACIO · Atacar: S</p>
-    <button id="playBtn" class="btn primary">JUGAR</button>
-  </div>
-
-  <!-- El juego -->
-  <main id="gameScreen" style="display:none;">
+  <main>
     <h1 class="title">Juego Oso</h1>
+
     <div class="game-wrapper">
       <div class="game" id="viewport">
-
         <!-- HUD -->
         <div class="hud">
           <div id="honeyHUD" class="hud-item">
@@ -29,6 +20,7 @@
           </div>
         </div>
 
+        <!-- Mundo desplazable -->
         <div class="world" id="world">
           <div id="player" class="player">
             <div class="sword"></div>
@@ -38,7 +30,17 @@
           <div id="items"></div>
         </div>
 
+        <!-- Rocas (corren por pantalla, no se desplazan con el mundo) -->
         <div id="runnerRocks"></div>
+
+        <!-- Overlay de inicio -->
+        <div id="startOverlay" class="overlay visible" role="dialog" aria-modal="true">
+          <div class="overlay-box">
+            <h2>¿Listo?</h2>
+            <p class="subtitle">Mover: A/D o ←/→ · Saltar: ESPACIO · Atacar: S</p>
+            <button id="startBtn" class="btn primary" autofocus>JUGAR</button>
+          </div>
+        </div>
 
         <!-- Overlay fin -->
         <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true">
@@ -46,14 +48,13 @@
             <h2 id="gameOverTitle">Game Over</h2>
             <div class="overlay-actions">
               <button id="retryBtn" class="btn">Jugar de nuevo</button>
-              <button id="backHomeBtn" class="btn ghost">Inicio</button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </main>
 
+  </main>
   <script src="script.js"></script>
 </body>
 </html>
