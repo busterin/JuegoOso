@@ -32,15 +32,16 @@ let jumpBoostUntil = 0;
 
 let lastMoveDir = 1;
 
-const TRACK_LENGTH = PLAYER_SPEED * 120; // ~120 s
+/* 🔁 Mundo de 60 s caminando recto */
+const TRACK_LENGTH = PLAYER_SPEED * 60; // antes *120
 let worldX = 0;
 
 const RIGHT_FRACTION_WHEN_TRAVELING = 0.65;
 
-/* --- Spawner de obstáculos (más fácil) --- */
-const OB_MIN_DURATION = 2.8;  // s  (más lento)
+/* --- Spawner de obstáculos (mantengo la dificultad cómoda) --- */
+const OB_MIN_DURATION = 2.8;  // s
 const OB_MAX_DURATION = 3.6;  // s
-const OB_MIN_DELAY    = 900;  // ms (pausa entre rocas)
+const OB_MIN_DELAY    = 900;  // ms
 const OB_MAX_DELAY    = 1700; // ms
 let obstacleTimer = null;
 
@@ -80,8 +81,8 @@ function startGame() {
   cave.style.display = "none";
   gameOverLock = false;
 
-  // Sincroniza duración del ciclo día-noche con la “pista”
-  document.documentElement.style.setProperty('--dayCycle', '120s');
+  // Sincroniza el ciclo día-noche a 60 s
+  document.documentElement.style.setProperty('--dayCycle', '60s');
 
   // Reset espada/destello
   swordEl.style.opacity = "0";
@@ -90,7 +91,7 @@ function startGame() {
   sparkEl.style.left = "-9999px";
   sparkEl.classList.remove("burst");
 
-  // Comenzar con una pequeña espera
+  // Pequeña espera y empezamos
   scheduleNextObstacle(700);
 }
 
