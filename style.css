@@ -50,26 +50,26 @@ h1 { margin: 16px 0 8px; }
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
-  /* Compensación por aire en el PNG para que pise suelo visualmente */
-  background-position: center calc(100% + 10px);
-  transform-origin: bottom center; /* no usamos transform en el oso */
+  background-position: center calc(100% + 10px); /* 🔧 compensación suelo */
+  transform-origin: bottom center;
   z-index: 2;
 }
 
-/* --- ESPADA desacoplada --- */
+/* --- ESPADA desacoplada (visual) --- */
 #sword {
   position: absolute;
-  bottom: 18px;                 /* altura de “mano” aproximada */
-  left: -9999px;                /* fuera de pantalla hasta posicionarla */
-  width: 70px; height: 70px;
+  bottom: 18px;
+  left: -9999px; /* se recoloca por JS */
+  width: 70px;
+  height: 70px;
   background: url("img/Espada.png") center/contain no-repeat;
-  opacity: 0;                   /* invisible salvo durante el ataque */
+  opacity: 0;
   pointer-events: none;
-  z-index: 3;                   /* por delante del oso */
-  transform-origin: 10% 80%;    /* pivot cerca del mango */
+  z-index: 3;
+  transform-origin: 10% 80%;
 }
 
-/* Animaciones del golpe (sin afectar al oso) */
+/* Swing al atacar */
 #sword.swing-right {
   animation: swingRight 180ms ease-out forwards;
   opacity: 1;
@@ -92,7 +92,8 @@ h1 { margin: 16px 0 8px; }
   position: absolute;
   bottom: 0;
   right: -50px;
-  width: 50px; height: 50px;
+  width: 50px;
+  height: 50px;
   background-image: url("img/Roca.png");
   background-size: contain;
   background-repeat: no-repeat;
@@ -105,7 +106,7 @@ h1 { margin: 16px 0 8px; }
   to   { right: 100%; }
 }
 
-/* Efecto al destruir roca */
+/* Efecto destruir roca */
 #obstacle.disintegrate {
   animation: rockVanish .28s ease forwards;
 }
@@ -120,7 +121,8 @@ h1 { margin: 16px 0 8px; }
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 100px; height: 100px;
+  width: 100px;
+  height: 100px;
   background: url("img/Cueva.png") bottom center / contain no-repeat;
   display: none;
 }
@@ -133,7 +135,7 @@ h1 { margin: 16px 0 8px; }
   100% { bottom: 0; }
 }
 
-/* Controles móviles (debajo del juego) */
+/* Controles móviles */
 .controls {
   display:flex; gap:12px; justify-content:center; align-items:center;
   margin: 6px auto 20px;
@@ -144,7 +146,7 @@ h1 { margin: 16px 0 8px; }
   touch-action: manipulation;
 }
 
-/* Visibles en móvil/tablet; ocultos en escritorio ancho */
+/* Ocultar controles en escritorio ancho */
 @media (min-width: 1200px) {
   .controls { display:none; }
 }
