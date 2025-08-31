@@ -35,9 +35,9 @@ h1 { margin: 16px 0 8px; }
   margin: 20px auto 10px;
   width: 600px;
   height: 200px;
-  background-color: #cde7ff;                  /* color de respaldo */
+  background-color: #cde7ff;                 /* color de respaldo */
   background-image: url("img/Fondo.jpg");
-  background-repeat: repeat-x;                 /* ← NUNCA blanco */
+  background-repeat: repeat-x;                /* ← NUNCA blanco */
   background-position: bottom left;
   background-size: auto 100%;
   border: 2px solid #333;
@@ -46,23 +46,23 @@ h1 { margin: 16px 0 8px; }
 
 /* --- JUGADOR (OSO) SIEMPRE EN EL SUELO --- */
 #player {
-  --ground-offset: 0px;                        /* AJUSTE FINO si tu PNG tiene margen inferior */
+  --ground-offset: -6px;                      /* 🔧 ajustable si tu PNG tiene margen inferior */
   position: absolute;
-  bottom: var(--ground-offset);                /* ← anclado al suelo */
-  left: 50px;                                  /* empieza a la izquierda */
-  width: 80px; height: 80px;                   /* más grande que la roca */
+  bottom: var(--ground-offset);               /* anclado al suelo */
+  left: 50px;
+  width: 80px; height: 80px;                  /* más grande que la roca */
   background: url("img/Oso.png") bottom center / contain no-repeat;
-  transform-origin: bottom center;             /* voltear sin “flotar” */
-  transition: transform .06s linear;           /* para el volteo */
+  transform-origin: bottom center;            /* volteo sin “flotar” */
+  transition: transform .06s linear;          /* para el volteo */
 }
-#player.facing-left { transform: scaleX(-1); } /* volteo al mirar a la izquierda */
+#player.facing-left { transform: scaleX(-1); }
 
 /* Espada (hijo del oso) */
 #player { position: relative; }
 #player .sword {
   position: absolute;
   width: 80px; height: 80px;
-  bottom: 24px; left: 58px;                    /* lado derecho por defecto */
+  bottom: 24px; left: 58px;                   /* lado derecho por defecto */
   background: url("img/Espada.png") center/contain no-repeat;
   opacity: 0; transform: translateY(8px) rotate(12deg);
   transition: opacity .06s ease, transform .06s ease;
@@ -70,7 +70,7 @@ h1 { margin: 16px 0 8px; }
 }
 #player.attacking .sword { opacity: 1; transform: translateY(0) rotate(-12deg); }
 #player.facing-left .sword {
-  left: auto; right: 58px;                     /* mueve la espada al lado izquierdo */
+  left: auto; right: 58px;                    /* mueve la espada al lado izquierdo */
   transform: scaleX(-1) translateY(8px) rotate(12deg);
 }
 #player.facing-left.attacking .sword {
@@ -104,7 +104,7 @@ h1 { margin: 16px 0 8px; }
   display: none;
 }
 
-/* --- SALTO con bottom (como cuando funcionaba antes) --- */
+/* --- SALTO con bottom (como cuando funcionaba bien) --- */
 .jump { animation: jump 0.55s ease; }
 @keyframes jump {
   0%   { bottom: var(--ground-offset); }
