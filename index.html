@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Juego Dinosaurio</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <!-- Pantalla de inicio -->
@@ -20,14 +20,13 @@
   <h1>Juego estilo Dinosaurio 🦖</h1>
 
   <div class="game" id="gameArea">
+    <!-- ✨ Capa de cielo para el ciclo día-noche -->
+    <div id="sky" class="sky-tint" aria-hidden="true"></div>
+
+    <!-- Personajes/objetos -->
     <div id="player"></div>
-
-    <!-- ⚔️ Espada visual desacoplada -->
     <div id="sword" class="sword" aria-hidden="true"></div>
-
-    <!-- ✨ Destello de golpe -->
     <div id="spark" aria-hidden="true"></div>
-
     <div id="obstacle"></div>
     <div id="cave"></div>
   </div>
