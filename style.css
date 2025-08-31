@@ -35,23 +35,28 @@ h1 { margin: 16px 0 8px; }
   margin: 20px auto 10px;
   width: 600px;
   height: 200px;
-  background: #fff url("img/Fondo.jpg") center/cover no-repeat;
+  /* Fondo SIEMPRE relleno: color de respaldo + imagen en mosaico horizontal */
+  background-color: #cde7ff;
+  background-image: url("img/Fondo.jpg");
+  background-repeat: repeat-x;
+  background-position: bottom left;
+  background-size: auto 100%;
   border: 2px solid #333;
   overflow: hidden;
 }
 
-/* --- JUGADOR (OSO) --- */
+/* --- JUGADOR (OSO) SIEMPRE EN EL SUELO --- */
 #player {
   position: absolute;
-  bottom: 0;
-  left: 50px;
-  width: 80px;   /* más grande que la roca */
+  bottom: 0;             /* pies pegados al suelo */
+  left: 50px;            /* empieza a la izquierda */
+  width: 80px;
   height: 80px;
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
-  transform-origin: bottom center;
+  transform-origin: bottom center;  /* al voltear, no se mueve del suelo */
   transition: transform .06s linear;
 }
 #player.facing-left { transform: scaleX(-1); }
@@ -61,7 +66,7 @@ h1 { margin: 16px 0 8px; }
 #player .sword {
   position: absolute;
   width: 80px; height: 80px;
-  bottom: 24px; left: 58px; /* lado derecho por defecto */
+  bottom: 24px; left: 58px;             /* lado derecho por defecto */
   background: url("img/Espada.png") center/contain no-repeat;
   opacity: 0; transform: translateY(8px) rotate(12deg);
   transition: opacity .06s ease, transform .06s ease;
@@ -69,7 +74,7 @@ h1 { margin: 16px 0 8px; }
 }
 #player.attacking .sword { opacity: 1; transform: translateY(0) rotate(-12deg); }
 #player.facing-left .sword {
-  left: auto; right: 58px;
+  left: auto; right: 58px;               /* mueve la espada al lado izquierdo */
   transform: scaleX(-1) translateY(8px) rotate(12deg);
 }
 #player.facing-left.attacking .sword {
@@ -87,14 +92,14 @@ h1 { margin: 16px 0 8px; }
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
-  animation: moveObstacle 2s linear infinite;
+  animation: moveObstacle 2.1s linear infinite;
 }
 @keyframes moveObstacle {
   from { right: -50px; }
   to   { right: 100%; }
 }
 
-/* Efecto desintegración de la roca al ser golpeada */
+/* Desintegración de la roca al ser golpeada */
 #obstacle.disintegrate {
   animation: rockVanish .35s ease forwards;
   filter: blur(0);
@@ -116,7 +121,7 @@ h1 { margin: 16px 0 8px; }
   display: none;
 }
 
-/* --- SALTO --- */
+/* --- SALTO (alto) --- */
 .jump { animation: jump 0.55s ease; }
 @keyframes jump {
   0%   { bottom: 0; }
@@ -124,7 +129,7 @@ h1 { margin: 16px 0 8px; }
   100% { bottom: 0; }
 }
 
-/* Controles móviles (debajo del juego) */
+/* Controles móviles (debajo del juego, ocultos en escritorio) */
 .controls {
   display:flex; gap:12px; justify-content:center; align-items:center;
   margin: 6px auto 20px;
@@ -134,8 +139,6 @@ h1 { margin: 16px 0 8px; }
   background:#fff; font-size:22px; font-weight:700;
   touch-action: manipulation;
 }
-
-/* Ocultar controles en escritorio (≥800px) */
 @media (min-width: 800px) {
   .controls { display:none; }
 }
