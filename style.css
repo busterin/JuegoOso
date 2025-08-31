@@ -32,21 +32,21 @@ h1 { margin: 16px 0 8px; }
 /* Juego */
 .game {
   position: relative;
-  margin: 20px auto;
+  margin: 20px auto 10px;
   width: 600px;
   height: 200px;
-  background: #fff url("img/Fondo.jpg") center/cover no-repeat; /* fondo desde /img */
+  background: #fff url("img/Fondo.jpg") center/cover no-repeat;
   border: 2px solid #333;
   overflow: hidden;
 }
 
-/* --- JUGADOR (OSO) MÁS GRANDE --- */
+/* --- JUGADOR (OSO) más grande --- */
 #player {
   position: absolute;
   bottom: 0;
   left: 50px;
-  width: 80px;          /* ↑ era 60px */
-  height: 80px;         /* ↑ era 60px */
+  width: 80px;
+  height: 80px;
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
@@ -54,13 +54,13 @@ h1 { margin: 16px 0 8px; }
   transform-origin: bottom center;
 }
 
-/* --- OBSTÁCULO (ROCA) MÁS PEQUEÑO --- */
+/* --- OBSTÁCULO (ROCA) más pequeño --- */
 #obstacle {
   position: absolute;
   bottom: 0;
-  right: -50px;         /* ajustado al nuevo ancho */
-  width: 50px;          /* ↓ era 60px */
-  height: 50px;         /* ↓ era 60px */
+  right: -50px;
+  width: 50px;
+  height: 50px;
   background-image: url("img/Roca.png");
   background-size: contain;
   background-repeat: no-repeat;
@@ -69,30 +69,41 @@ h1 { margin: 16px 0 8px; }
 }
 
 @keyframes moveObstacle {
-  from { right: -50px; }   /* acorde al ancho nuevo */
+  from { right: -50px; }
   to   { right: 100%; }
 }
 
-/* --- SALTO MÁS ALTO --- */
-.jump { animation: jump 0.55s ease; }  /* un pelín más largo para acompañar el impulso */
+/* --- CUEVA --- */
+#cave {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: url("img/Cueva.png") bottom center / contain no-repeat;
+  display: none;
+}
 
+/* --- SALTO --- */
+.jump { animation: jump 0.55s ease; }
 @keyframes jump {
   0%   { bottom: 0; }
-  50%  { bottom: 120px; }  /* ↑ era 90px */
+  50%  { bottom: 120px; }
   100% { bottom: 0; }
 }
 
-/* Controles móviles */
+/* Controles móviles (debajo del juego) */
 .controls {
-  position:absolute; left:0; right:0; bottom:6px;
-  display:flex; gap:10px; justify-content:center; pointer-events:auto;
+  display:flex; gap:12px; justify-content:center; align-items:center;
+  margin: 6px auto 20px;
 }
 .ctrl {
-  width:72px; height:42px; border:2px solid #333; border-radius:10px;
-  background:#fff; font-size:20px; font-weight:700;
+  width:90px; height:50px; border:2px solid #333; border-radius:10px;
+  background:#fff; font-size:22px; font-weight:700;
   touch-action: manipulation;
 }
 
+/* 🔒 Ocultar controles en escritorio (≥800px) */
 @media (min-width: 800px) {
-  .controls { display: none; }
+  .controls { display:none; }
 }
