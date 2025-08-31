@@ -240,7 +240,7 @@ function destroyRock(){
     obstacle.classList.remove("disintegrate");
     // agenda la siguiente con pausa
     scheduleNextObstacle(randi(OB_MIN_DELAY, OB_MAX_DELAY));
-  }, 280);
+  }, 800);
 }
 
 /* Colisiones normales (pisar) */
