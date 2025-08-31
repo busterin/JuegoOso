@@ -20,27 +20,27 @@ let leftPressed = false;
 let rightPressed = false;
 let attackPressed = false;
 
-let playerX = 50;          // px (arranca a la izquierda)
-const PLAYER_WIDTH = 80;   // px
-const PLAYER_SPEED = 260;  // px/s
+let playerX = 50;                 // empieza a la izquierda
+const PLAYER_WIDTH = 80;
+const PLAYER_SPEED = 260;
 
-// Salto (impulso horizontal siempre hacia la dirección actual/última)
-const JUMP_FORWARD_VX = 260; // px/s extra durante el salto
-const JUMP_BOOST_TIME = 360; // ms de impulso
+// Salto con impulso horizontal SIEMPRE (según dirección actual/última)
+const JUMP_FORWARD_VX = 260;
+const JUMP_BOOST_TIME = 360;
 let jumpBoostVX = 0;
 let jumpBoostUntil = 0;
 
-// Dirección “mirando” del oso: 1 derecha, -1 izquierda
+// Dirección de mirada del oso (1 der, -1 izq) — se usa para voltear y para el impulso
 let lastMoveDir = 1;
 
-/* Mundo: 2 minutos caminando recto */
-const TRACK_LENGTH = PLAYER_SPEED * 120; // px
+/* Mundo de 2 minutos caminando recto */
+const TRACK_LENGTH = PLAYER_SPEED * 120;
 let worldX = 0;
 
-/* Límite derecho dinámico (para no pegarse al borde hasta el final) */
+/* No arrinconar al oso hasta el final */
 const RIGHT_FRACTION_WHEN_TRAVELING = 0.65;
 
-/* Ataque (ventana y cooldown) */
+/* Ataque */
 const ATTACK_DURATION = 180;  // ms
 const ATTACK_COOLDOWN = 280;  // ms
 let attacking = false;
@@ -59,13 +59,13 @@ function startGame() {
   leftPressed = rightPressed = attackPressed = false;
   playerX = 50; worldX = 0; lastMoveDir = 1;
   player.style.left = playerX + "px";
+  player.classList.remove("facing-left","attacking");
   cave.style.display = "none";
   gameOverLock = false;
-  player.classList.remove("facing-left","attacking");
   restartObstacle();
 }
 
-/* ---------- Input teclado ---------- */
+/* ---------- Teclado ---------- */
 document.addEventListener("keydown", (e) => {
   if (e.code === "Space") {
     e.preventDefault();
@@ -75,7 +75,6 @@ document.addEventListener("keydown", (e) => {
   if (e.code === "ArrowRight") { rightPressed = true; lastMoveDir =  1; }
   if (e.code === "KeyS")       { attackPressed = true; tryAttack(); }
 
-  // Iniciar desde overlay
   if ((e.code === "Enter" || e.code === "Space") && startScreen.classList.contains("visible")) {
     e.preventDefault();
     playBtn.click();
@@ -103,7 +102,7 @@ bindHold(btnRight,  ()=>{ rightPressed = true; lastMoveDir =  1; }, ()=> rightPr
 bindHold(btnJump,   ()=>{ if (running && !isJumping) jump(); }, ()=>{});
 bindHold(btnAttack, ()=>{ attackPressed = true; tryAttack(); }, ()=>{ attackPressed = false; });
 
-/* ---------- Ataque ---------- */
+/* ---------- Ataque ----------- */
 function tryAttack(){
   const now = performance.now();
   if (!running) return;
@@ -120,7 +119,7 @@ function tryAttack(){
 
 function getSwordRect() {
   const p = player.getBoundingClientRect();
-  const swordW = 70, swordH = 70; // hitbox aproximada
+  const swordW = 70, swordH = 70; // hitbox
   if (lastMoveDir > 0) {
     return { left: p.right - 10, right: p.right - 10 + swordW, top: p.top + 10, bottom: p.top + 10 + swordH };
   } else {
@@ -141,41 +140,37 @@ function moveLoop(t){
   if (running){
     const rect = gameArea.getBoundingClientRect();
 
-    // Volteo visual del oso según dirección
+    /* Volteo (solo espejo horizontal, no afecta al suelo) */
     player.classList.toggle("facing-left", lastMoveDir < 0);
 
-    // 1) Velocidad local del oso (en pantalla)
+    /* 1) Velocidad en pantalla */
     let vx = 0;
     if (leftPressed)  vx -= PLAYER_SPEED;
     if (rightPressed) vx += PLAYER_SPEED;
 
-    // Impulso horizontal del salto (activo durante ventana)
     if (performance.now() < jumpBoostUntil) {
-      vx += jumpBoostVX; // ya incluye signo ±
+      vx += jumpBoostVX;  // impulso con signo ±
     }
 
-    // 2) Límite derecho dinámico
+    /* 2) Límite a la derecha (no arrinconar hasta el final) */
     const nearEnd = worldX > TRACK_LENGTH - rect.width * 1.2;
     const rightLimit = nearEnd
       ? rect.width - PLAYER_WIDTH
       : rect.width * RIGHT_FRACTION_WHEN_TRAVELING - PLAYER_WIDTH;
 
-    // Posición visible del oso
     playerX = Math.max(0, Math.min(rightLimit, playerX + vx * dt));
-    player.style.left = playerX + "px";
+    player.style.left = playerX + "px";    // bottom:0 en CSS → nunca flota
 
-    // 3) Avance real del mundo (siempre suma impulso con su signo)
+    /* 3) Avance real del mundo (siempre cuenta el impulso en su dirección) */
     const boost = (performance.now() < jumpBoostUntil) ? (JUMP_FORWARD_VX * lastMoveDir) : 0;
     const worldVX =
-      (rightPressed ? PLAYER_SPEED : 0) +
-      boost -
-      (leftPressed ? PLAYER_SPEED : 0);
+      (rightPressed ? PLAYER_SPEED : 0) + boost - (leftPressed ? PLAYER_SPEED : 0);
     worldX = Math.max(0, Math.min(TRACK_LENGTH, worldX + worldVX * dt));
 
-    // 4) Parallax del fondo
+    /* 4) Fondo desplazándose y NUNCA blanco (repeat-x en CSS) */
     gameArea.style.backgroundPositionX = `${-worldX * 0.25}px`;
 
-    // 5) Cueva al final
+    /* 5) Cueva al final */
     if (worldX > TRACK_LENGTH - rect.width * 2) {
       cave.style.display = "block";
     } else {
@@ -188,16 +183,11 @@ function moveLoop(t){
       startScreen.classList.add("visible");
     }
 
-    // 6) Ataque contra roca (si ventana activa)
+    /* 6) Ataque vs roca */
     if (attacking) {
       const sRect = getSwordRect();
       const oRect = obstacle.getBoundingClientRect();
-      if (rectsOverlap({
-          left: sRect.left, right: sRect.right, top: sRect.top, bottom: sRect.bottom
-        },{
-          left: oRect.left, right: oRect.right, top: oRect.top, bottom: oRect.bottom
-        })) {
-        // Desintegrar roca y reiniciar
+      if (rectsOverlap(sRect, {left:oRect.left,right:oRect.right,top:oRect.top,bottom:oRect.bottom})) {
         disintegrateRock();
       }
     }
@@ -206,17 +196,15 @@ function moveLoop(t){
 }
 requestAnimationFrame(moveLoop);
 
-/* ---------- Salto (alto + impulso horizontal) ---------- */
+/* ---------- Salto ---------- */
 function jump() {
   isJumping = true;
 
-  // Dirección del impulso: tecla actual o última usada
   const dir = rightPressed ? 1 : (leftPressed ? -1 : lastMoveDir);
   lastMoveDir = dir;
   jumpBoostVX = JUMP_FORWARD_VX * dir;
   jumpBoostUntil = performance.now() + JUMP_BOOST_TIME;
 
-  // Animación vertical (CSS)
   player.classList.add("jump");
   setTimeout(() => {
     player.classList.remove("jump");
@@ -224,30 +212,25 @@ function jump() {
   }, 550);
 }
 
-/* ---------- Obstáculo (enemigo) ---------- */
+/* ---------- Obstáculo ---------- */
 function restartObstacle() {
   obstacle.classList.remove("disintegrate");
   obstacle.style.opacity = "1";
   obstacle.style.filter = "";
   obstacle.style.animation = "none";
   void obstacle.offsetWidth; // reflow
-  obstacle.style.animation = "moveObstacle 2s linear infinite";
+  obstacle.style.animation = "moveObstacle 2.1s linear infinite";
 }
-
 function disintegrateRock(){
-  // evita disparos múltiples mientras se desintegra
   obstacle.classList.add("disintegrate");
   obstacle.style.animation = "none";
   setTimeout(() => {
-    // ocultar un momento, luego rearmar animación
     obstacle.style.opacity = "0";
-    setTimeout(() => {
-      restartObstacle();
-    }, 80);
+    setTimeout(() => { restartObstacle(); }, 80);
   }, 350);
 }
 
-/* Colisiones AABB (para pisar enemigo si no usas espada) */
+/* Colisiones AABB para pisar si no atacas */
 function isColliding(a, b) {
   const ra = a.getBoundingClientRect();
   const rb = b.getBoundingClientRect();
@@ -260,11 +243,8 @@ function isStomp(playerEl, obstEl) {
   const horizontalOverlap = !(rp.right < ro.left || rp.left > ro.right);
   return isJumping && verticalOK && horizontalOverlap;
 }
-
-/* Pisar enemigo = eliminar; golpe lateral = fin (si no atacas) */
 setInterval(() => {
   if (!running) return;
-
   if (isColliding(player, obstacle)) {
     if (isStomp(player, obstacle)) {
       disintegrateRock();
