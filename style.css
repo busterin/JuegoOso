@@ -50,9 +50,41 @@ h1 { margin: 16px 0 8px; }
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
-  /* 🔧 Compensación para evitar cualquier “flote” del PNG */
+  /* Compensación por aire en el PNG para que pise suelo visualmente */
   background-position: center calc(100% + 10px);
-  transform-origin: bottom center;
+  transform-origin: bottom center; /* no usamos transform en el oso */
+  z-index: 2;
+}
+
+/* --- ESPADA desacoplada --- */
+#sword {
+  position: absolute;
+  bottom: 18px;                 /* altura de “mano” aproximada */
+  left: -9999px;                /* fuera de pantalla hasta posicionarla */
+  width: 70px; height: 70px;
+  background: url("img/Espada.png") center/contain no-repeat;
+  opacity: 0;                   /* invisible salvo durante el ataque */
+  pointer-events: none;
+  z-index: 3;                   /* por delante del oso */
+  transform-origin: 10% 80%;    /* pivot cerca del mango */
+}
+
+/* Animaciones del golpe (sin afectar al oso) */
+#sword.swing-right {
+  animation: swingRight 180ms ease-out forwards;
+  opacity: 1;
+}
+#sword.swing-left {
+  animation: swingLeft 180ms ease-out forwards;
+  opacity: 1;
+}
+@keyframes swingRight {
+  0%   { transform: rotate(40deg) translateX(-10px); }
+  100% { transform: rotate(-35deg) translateX(6px); }
+}
+@keyframes swingLeft {
+  0%   { transform: scaleX(-1) rotate(40deg) translateX(-10px); }
+  100% { transform: scaleX(-1) rotate(-35deg) translateX(6px); }
 }
 
 /* --- OBSTÁCULO (ROCA) --- */
@@ -60,17 +92,27 @@ h1 { margin: 16px 0 8px; }
   position: absolute;
   bottom: 0;
   right: -50px;
-  width: 50px;
-  height: 50px;
+  width: 50px; height: 50px;
   background-image: url("img/Roca.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
   animation: moveObstacle 2s linear infinite;
+  z-index: 1;
 }
 @keyframes moveObstacle {
   from { right: -50px; }
   to   { right: 100%; }
+}
+
+/* Efecto al destruir roca */
+#obstacle.disintegrate {
+  animation: rockVanish .28s ease forwards;
+}
+@keyframes rockVanish {
+  0%   { opacity: 1; transform: scale(1); filter: blur(0); }
+  70%  { opacity: .35; transform: scale(1.15); filter: blur(2px); }
+  100% { opacity: 0; transform: scale(1.25) translateY(-6px); filter: blur(4px); }
 }
 
 /* --- CUEVA --- */
@@ -78,8 +120,7 @@ h1 { margin: 16px 0 8px; }
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 100px;
-  height: 100px;
+  width: 100px; height: 100px;
   background: url("img/Cueva.png") bottom center / contain no-repeat;
   display: none;
 }
@@ -103,7 +144,7 @@ h1 { margin: 16px 0 8px; }
   touch-action: manipulation;
 }
 
-/* Ocultar controles solo en pantallas grandes (≥1200px) → móviles y tablets los ven */
+/* Visibles en móvil/tablet; ocultos en escritorio ancho */
 @media (min-width: 1200px) {
   .controls { display:none; }
 }
