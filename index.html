@@ -11,7 +11,7 @@
   <div id="startScreen" class="overlay visible">
     <div class="overlay-box">
       <h1>Juego estilo Dinosaurio 🐻</h1>
-      <p>Mover: ← → · Saltar: ESPACIO</p>
+      <p>Mover: ← → · Saltar: ESPACIO · Atacar: S</p>
       <p>En móvil: botones de abajo</p>
       <button id="playBtn" class="btn primary">JUGAR</button>
     </div>
@@ -20,16 +20,19 @@
   <h1>Juego estilo Dinosaurio 🦖</h1>
 
   <div class="game" id="gameArea">
-    <div id="player"></div>
+    <div id="player">
+      <div class="sword"></div>
+    </div>
     <div id="obstacle"></div>
     <div id="cave"></div>
   </div>
 
   <!-- Controles móviles (debajo del juego, ocultos en escritorio) -->
   <div class="controls">
-    <button id="btnLeft"  class="ctrl">◀︎</button>
-    <button id="btnJump"  class="ctrl">⏫</button>
-    <button id="btnRight" class="ctrl">▶︎</button>
+    <button id="btnLeft"   class="ctrl">◀︎</button>
+    <button id="btnJump"   class="ctrl">⏫</button>
+    <button id="btnRight"  class="ctrl">▶︎</button>
+    <button id="btnAttack" class="ctrl">🗡️</button>
   </div>
 
   <script src="script.js"></script>
