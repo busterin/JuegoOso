@@ -32,16 +32,16 @@ let jumpBoostUntil = 0;
 
 let lastMoveDir = 1;
 
-const TRACK_LENGTH = PLAYER_SPEED * 120;
+const TRACK_LENGTH = PLAYER_SPEED * 120; // ~120 s
 let worldX = 0;
 
 const RIGHT_FRACTION_WHEN_TRAVELING = 0.65;
 
 /* --- Spawner de obstáculos (más fácil) --- */
-const OB_MIN_DURATION = 2.8;   // s  (antes ~2)  → más lento
-const OB_MAX_DURATION = 3.6;   // s
-const OB_MIN_DELAY    = 900;   // ms pausa entre rocas
-const OB_MAX_DELAY    = 1700;  // ms
+const OB_MIN_DURATION = 2.8;  // s  (más lento)
+const OB_MAX_DURATION = 3.6;  // s
+const OB_MIN_DELAY    = 900;  // ms (pausa entre rocas)
+const OB_MAX_DELAY    = 1700; // ms
 let obstacleTimer = null;
 
 function rand(min, max){ return Math.random() * (max - min) + min; }
@@ -49,12 +49,10 @@ function randi(min, max){ return Math.floor(rand(min, max)); }
 
 function spawnObstacle(){
   if (!running) return;
-  // prepara
   obstacle.classList.remove("disintegrate");
   obstacle.style.opacity = "1";
   obstacle.style.transform = "";
   obstacle.style.right = "-50px";
-  // lanza una sola pasada con duración aleatoria
   const dur = rand(OB_MIN_DURATION, OB_MAX_DURATION).toFixed(2);
   obstacle.style.animation = `moveObstacle ${dur}s linear 1`;
 }
@@ -62,8 +60,6 @@ function scheduleNextObstacle(delayMs){
   clearTimeout(obstacleTimer);
   obstacleTimer = setTimeout(spawnObstacle, delayMs);
 }
-
-// al terminar de cruzar, agenda la siguiente
 obstacle.addEventListener("animationend", () => {
   obstacle.style.animation = "none";
   scheduleNextObstacle(randi(OB_MIN_DELAY, OB_MAX_DELAY));
@@ -84,6 +80,9 @@ function startGame() {
   cave.style.display = "none";
   gameOverLock = false;
 
+  // Sincroniza duración del ciclo día-noche con la “pista”
+  document.documentElement.style.setProperty('--dayCycle', '120s');
+
   // Reset espada/destello
   swordEl.style.opacity = "0";
   swordEl.style.left = "-9999px";
@@ -91,7 +90,7 @@ function startGame() {
   sparkEl.style.left = "-9999px";
   sparkEl.classList.remove("burst");
 
-  // comenzar con una pequeña espera
+  // Comenzar con una pequeña espera
   scheduleNextObstacle(700);
 }
 
@@ -155,6 +154,7 @@ function moveLoop(t){
     const worldVX = (rightPressed ? PLAYER_SPEED : 0) + boost - (leftPressed ? PLAYER_SPEED : 0);
     worldX = Math.max(0, Math.min(TRACK_LENGTH, worldX + worldVX * dt));
 
+    // Scroll del tile de fondo (se repite infinito)
     gameArea.style.backgroundPositionX = `${-worldX * 0.25}px`;
 
     if (worldX > TRACK_LENGTH - rect.width * 2) cave.style.display = "block";
@@ -233,14 +233,12 @@ function doAttack(){
 
 /* ---------- Obstáculo ---------- */
 function destroyRock(){
-  // parar animación actual y efecto
   obstacle.style.animation = "none";
   obstacle.classList.add("disintegrate");
   setTimeout(() => {
     obstacle.classList.remove("disintegrate");
-    // agenda la siguiente con pausa
     scheduleNextObstacle(randi(OB_MIN_DELAY, OB_MAX_DELAY));
-  }, 800);
+  }, 280);
 }
 
 /* Colisiones normales (pisar) */
