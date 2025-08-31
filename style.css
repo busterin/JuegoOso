@@ -35,7 +35,9 @@ h1 { margin: 16px 0 8px; }
   margin: 20px auto 10px;
   width: 600px;
   height: 200px;
-  background: #fff url("img/Fondo.jpg") center/cover no-repeat;
+  /* 🔹 Fondo tileable repetido */
+  background: url("img/FondoTile.jpg") repeat-x bottom;
+  background-size: auto 100%;   /* mantiene altura del juego, se repite en horizontal */
   border: 2px solid #333;
   overflow: hidden;
 }
@@ -116,7 +118,6 @@ h1 { margin: 16px 0 8px; }
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
-  /* la animación se lanza por JS */
   z-index: 1;
 }
 @keyframes moveObstacle {
