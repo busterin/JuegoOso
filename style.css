@@ -29,16 +29,15 @@ h1 { margin: 16px 0 8px; }
   width:min(520px, 92vw);
 }
 
-/* Juego */
+/* Juego: fondo en mosaico para que nunca quede blanco */
 .game {
   position: relative;
   margin: 20px auto 10px;
   width: 600px;
   height: 200px;
-  /* Fondo SIEMPRE relleno: color de respaldo + imagen en mosaico horizontal */
   background-color: #cde7ff;
   background-image: url("img/Fondo.jpg");
-  background-repeat: repeat-x;
+  background-repeat: repeat-x;           /* <-- nunca se corta */
   background-position: bottom left;
   background-size: auto 100%;
   border: 2px solid #333;
@@ -48,16 +47,17 @@ h1 { margin: 16px 0 8px; }
 /* --- JUGADOR (OSO) SIEMPRE EN EL SUELO --- */
 #player {
   position: absolute;
-  bottom: 0;             /* pies pegados al suelo */
-  left: 50px;            /* empieza a la izquierda */
-  width: 80px;
+  bottom: 0;               /* ← anclado al suelo */
+  left: 50px;
+  width: 80px;             /* más grande que la roca */
   height: 80px;
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
-  transform-origin: bottom center;  /* al voltear, no se mueve del suelo */
-  transition: transform .06s linear;
+  transform-origin: bottom center;       /* voltear sin “flotar” */
+  will-change: transform;                /* salto fluido */
+  transition: transform .06s linear;     /* para el volteo */
 }
 #player.facing-left { transform: scaleX(-1); }
 
@@ -121,12 +121,12 @@ h1 { margin: 16px 0 8px; }
   display: none;
 }
 
-/* --- SALTO (alto) --- */
+/* --- SALTO (con transform para no mover el “bottom:0”) --- */
 .jump { animation: jump 0.55s ease; }
 @keyframes jump {
-  0%   { bottom: 0; }
-  50%  { bottom: 120px; }
-  100% { bottom: 0; }
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-120px); } /* sube 120px pero el anclaje sigue siendo bottom:0 */
+  100% { transform: translateY(0); }
 }
 
 /* Controles móviles (debajo del juego, ocultos en escritorio) */
