@@ -35,49 +35,48 @@ h1 { margin: 16px 0 8px; }
   margin: 20px auto 10px;
   width: 600px;
   height: 200px;
-  background-color: #cde7ff;                 /* color de respaldo */
+  background-color: #cde7ff;
   background-image: url("img/Fondo.jpg");
-  background-repeat: repeat-x;                /* ← NUNCA blanco */
+  background-repeat: repeat-x;     /* ← NUNCA blanco */
   background-position: bottom left;
   background-size: auto 100%;
   border: 2px solid #333;
   overflow: hidden;
 }
 
-/* --- JUGADOR (OSO) SIEMPRE EN EL SUELO --- */
+/* --- JUGADOR (OSO) pegado al suelo --- */
 #player {
-  --ground-offset: -6px;                      /* 🔧 ajustable si tu PNG tiene margen inferior */
   position: absolute;
-  bottom: var(--ground-offset);               /* anclado al suelo */
+  bottom: -8px !important;         /* 🔧 ajuste fino del PNG para que toque el suelo */
   left: 50px;
-  width: 80px; height: 80px;                  /* más grande que la roca */
+  width: 80px; height: 80px;
   background: url("img/Oso.png") bottom center / contain no-repeat;
-  transform-origin: bottom center;            /* volteo sin “flotar” */
-  transition: transform .06s linear;          /* para el volteo */
+  transform-origin: bottom center;
+  transition: transform .06s linear; /* solo para el volteo */
 }
 #player.facing-left { transform: scaleX(-1); }
 
-/* Espada (hijo del oso) */
+/* Espada (hija del oso) */
 #player { position: relative; }
 #player .sword {
   position: absolute;
   width: 80px; height: 80px;
-  bottom: 24px; left: 58px;                   /* lado derecho por defecto */
+  bottom: 24px; left: 58px;         /* lado derecho por defecto */
   background: url("img/Espada.png") center/contain no-repeat;
-  opacity: 0; transform: translateY(8px) rotate(12deg);
+  opacity: 0; transform: rotate(12deg);
   transition: opacity .06s ease, transform .06s ease;
   pointer-events: none;
 }
-#player.attacking .sword { opacity: 1; transform: translateY(0) rotate(-12deg); }
+#player.attacking .sword { opacity: 1; transform: rotate(-12deg); }
 #player.facing-left .sword {
-  left: auto; right: 58px;                    /* mueve la espada al lado izquierdo */
-  transform: scaleX(-1) translateY(8px) rotate(12deg);
+  left: auto; right: 58px;
+  transform: scaleX(-1) rotate(12deg);
 }
 #player.facing-left.attacking .sword {
-  transform: scaleX(-1) translateY(0) rotate(-12deg);
+  transform: scaleX(-1) rotate(-12deg);
 }
 
-/* --- OBSTÁCULO (ROCA) EN EL SUELO --- */
+/* --- OBSTÁCULO (ROCA) --- */
 #obstacle {
   position: absolute;
   bottom: 0;
@@ -91,8 +90,8 @@ h1 { margin: 16px 0 8px; }
 /* Desintegración de la roca al ser golpeada */
 #obstacle.disintegrate { animation: rockVanish .35s ease forwards; filter: blur(0); }
 @keyframes rockVanish {
-  0% { opacity: 1; transform: scale(1); filter: blur(0px); }
-  60% { opacity: .4; transform: scale(1.15); filter: blur(2px); }
+  0%   { opacity: 1; transform: scale(1);    filter: blur(0px); }
+  60%  { opacity: .4; transform: scale(1.15); filter: blur(2px); }
   100% { opacity: 0; transform: scale(1.25) translateY(-8px); filter: blur(4px); }
 }
 
@@ -104,12 +103,12 @@ h1 { margin: 16px 0 8px; }
   display: none;
 }
 
-/* --- SALTO con bottom (como cuando funcionaba bien) --- */
+/* --- SALTO (anima bottom para mantener el anclaje) --- */
 .jump { animation: jump 0.55s ease; }
 @keyframes jump {
-  0%   { bottom: var(--ground-offset); }
-  50%  { bottom: calc(var(--ground-offset) + 120px); }
-  100% { bottom: var(--ground-offset); }
+  0%   { bottom: -8px; }
+  50%  { bottom: 112px; }  /* -8 + 120 */
+  100% { bottom: -8px; }
 }
 
 /* Controles móviles (debajo del juego, ocultos en escritorio) */
