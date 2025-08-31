@@ -56,7 +56,8 @@ h1 { margin: 16px 0 8px; }
 }
 
 /* --- ESPADA desacoplada (visual) --- */
-#sword {
+/* Doble selector (#sword y .sword) por si el HTML difiere */
+#sword, .sword {
   position: absolute;
   bottom: 18px;            /* altura “mano” aprox */
   left: -9999px;           /* se recoloca por JS */
@@ -64,18 +65,21 @@ h1 { margin: 16px 0 8px; }
   background: url("img/Espada.png") center/contain no-repeat;
   opacity: 0;              /* visible solo al atacar */
   display: block;          /* aseguramos que no esté hidden */
+  visibility: visible;     /* idem */
   pointer-events: none;
-  z-index: 3;
+  z-index: 4;              /* por encima de roca y oso */
   transform-origin: 10% 80%;
+  /* 🟣 Recuadro de depuración: quítalo cuando confirmes que se ve */
+  outline: 2px dashed magenta;
 }
 
 /* Swing al atacar (solo efecto visual) */
-#sword.swing-right {
-  animation: swingRight 180ms ease-out forwards;
+#sword.swing-right, .sword.swing-right {
+  animation: swingRight 220ms ease-out forwards;
   opacity: 1;
 }
-#sword.swing-left {
-  animation: swingLeft 180ms ease-out forwards;
+#sword.swing-left, .sword.swing-left {
+  animation: swingLeft 220ms ease-out forwards;
   opacity: 1;
 }
 @keyframes swingRight {
@@ -85,6 +89,26 @@ h1 { margin: 16px 0 8px; }
 @keyframes swingLeft {
   0%   { transform: scaleX(-1) rotate(40deg) translateX(-10px); }
   100% { transform: scaleX(-1) rotate(-35deg) translateX(6px); }
+}
+
+/* ✨ Destello (spark) */
+#spark {
+  position: absolute;
+  width: 34px; height: 34px;
+  left: -9999px; bottom: 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255,255,120,0.95) 0%, rgba(255,170,0,0.9) 50%, rgba(255,140,0,0.0) 70%);
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+}
+#spark.burst {
+  animation: sparkPop 260ms ease-out forwards;
+}
+@keyframes sparkPop {
+  0%   { transform: scale(0.6); opacity: 0.0; }
+  30%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
 }
 
 /* --- OBSTÁCULO (ROCA) --- */
