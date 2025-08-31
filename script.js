@@ -1,14 +1,16 @@
 const gameArea = document.getElementById("gameArea");
 const player   = document.getElementById("player");
+const sword    = document.getElementById("sword");      // ⚔️ nueva referencia
 const obstacle = document.getElementById("obstacle");
 const cave     = document.getElementById("cave");
 
 const startScreen = document.getElementById("startScreen");
 const playBtn     = document.getElementById("playBtn");
 
-const btnLeft  = document.getElementById("btnLeft");
-const btnRight = document.getElementById("btnRight");
-const btnJump  = document.getElementById("btnJump");
+const btnLeft   = document.getElementById("btnLeft");
+const btnRight  = document.getElementById("btnRight");
+const btnJump   = document.getElementById("btnJump");
+const btnAttack = document.getElementById("btnAttack");
 
 /* --- Estado --- */
 let running = false;
@@ -18,22 +20,28 @@ let gameOverLock = false;
 let leftPressed = false;
 let rightPressed = false;
 
-let playerX = 50;          // px (arranca a la izquierda)
-const PLAYER_WIDTH = 80;   // px
-const PLAYER_SPEED = 260;  // px/s
+let playerX = 50;                  // px
+const PLAYER_WIDTH = 80;           // px
+const PLAYER_SPEED = 260;          // px/s
 
-// Impulso horizontal del salto (siempre hacia adelante)
-const JUMP_FORWARD_VX = 260; // px/s extra durante el salto
-const JUMP_BOOST_TIME = 360; // ms de impulso
+// Salto con impulso
+const JUMP_FORWARD_VX = 260;       // px/s extra
+const JUMP_BOOST_TIME = 360;       // ms
 let jumpBoostVX = 0;
 let jumpBoostUntil = 0;
 
-// Dirección “mirando” del oso: 1 derecha, -1 izquierda (solo para salto)
+// Dirección (1 der, -1 izq) para el salto y la espada
 let lastMoveDir = 1;
 
-/* --- Mundo de 2 minutos caminando recto --- */
-const TRACK_LENGTH = PLAYER_SPEED * 120; // px de “mundo” para 120s
-let worldX = 0; // progreso real en el mundo
+const TRACK_LENGTH = PLAYER_SPEED * 120; // ~2 min recto
+let worldX = 0;
+
+const RIGHT_FRACTION_WHEN_TRAVELING = 0.65;
+
+/* Ataque/espada */
+let attacking = false;
+let attackCooldownUntil = 0;
+const ATTACK_COOLDOWN = 220;       // ms
 
 /* ---------- Inicio ---------- */
 playBtn.addEventListener("click", () => {
@@ -44,11 +52,17 @@ playBtn.addEventListener("click", () => {
 function startGame() {
   running = true;
   isJumping = false;
+  attacking = false;
   leftPressed = rightPressed = false;
   playerX = 50; worldX = 0; lastMoveDir = 1;
   player.style.left = playerX + "px";
   cave.style.display = "none";
   gameOverLock = false;
+
+  // Esconder espada
+  sword.style.opacity = "0";
+  sword.className = "";
+  sword.style.left = "-9999px";
 
   restartObstacle();
 }
@@ -61,6 +75,7 @@ document.addEventListener("keydown", (e) => {
   }
   if (e.code === "ArrowLeft")  { leftPressed  = true; lastMoveDir = -1; }
   if (e.code === "ArrowRight") { rightPressed = true; lastMoveDir =  1; }
+  if (e.code === "KeyS")       { doAttack(); }
 
   if ((e.code === "Enter" || e.code === "Space") && startScreen.classList.contains("visible")) {
     e.preventDefault();
@@ -83,13 +98,12 @@ function bindHold(btn, on, off){
   btn?.addEventListener("mouseup",    end);
   btn?.addEventListener("mouseleave", end);
 }
-bindHold(btnLeft,  ()=>{ leftPressed  = true; lastMoveDir = -1; }, ()=> leftPressed = false);
-bindHold(btnRight, ()=>{ rightPressed = true; lastMoveDir =  1; }, ()=> rightPressed = false);
-bindHold(btnJump,  ()=>{ if (running && !isJumping) jump(); }, ()=>{});
+bindHold(btnLeft,   ()=>{ leftPressed  = true; lastMoveDir = -1; }, ()=> leftPressed = false);
+bindHold(btnRight,  ()=>{ rightPressed = true; lastMoveDir =  1; }, ()=> rightPressed = false);
+bindHold(btnJump,   ()=>{ if (running && !isJumping) jump(); }, ()=>{});
+bindHold(btnAttack, ()=>{ doAttack(); }, ()=>{});
 
-/* ---------- Movimiento + “mundo” ---------- */
-const RIGHT_FRACTION_WHEN_TRAVELING = 0.65;
-
+/* ---------- Movimiento + mundo ---------- */
 let lastTime = 0;
 function moveLoop(t){
   if (!lastTime) lastTime = t;
@@ -99,82 +113,122 @@ function moveLoop(t){
   if (running){
     const rect = gameArea.getBoundingClientRect();
 
-    // Velocidad local del oso (en pantalla)
+    // Velocidad en pantalla
     let vx = 0;
     if (leftPressed)  vx -= PLAYER_SPEED;
     if (rightPressed) vx += PLAYER_SPEED;
 
-    // Impulso horizontal del salto (ACTIVO SIEMPRE en la dirección actual/última)
+    // Impulso del salto (en la dirección actual/última)
     if (performance.now() < jumpBoostUntil) {
-      vx += jumpBoostVX; // jumpBoostVX ya incluye el signo (±)
+      vx += jumpBoostVX;
     }
 
-    // Límite dinámico a la derecha
+    // Límite a la derecha (centrado flexible)
     const nearEnd = worldX > TRACK_LENGTH - rect.width * 1.2;
     const rightLimit = nearEnd
       ? rect.width - PLAYER_WIDTH
       : rect.width * RIGHT_FRACTION_WHEN_TRAVELING - PLAYER_WIDTH;
 
-    // Posición visible en pantalla
+    // Posición visible
     playerX = Math.max(0, Math.min(rightLimit, playerX + vx * dt));
     player.style.left = playerX + "px";
 
-    // Avance real del mundo (sumamos SIEMPRE el impulso con su signo)
+    // Avance del mundo
     const boost = (performance.now() < jumpBoostUntil) ? (JUMP_FORWARD_VX * lastMoveDir) : 0;
-    const worldVX =
-      (rightPressed ? PLAYER_SPEED : 0) +
-      boost -
-      (leftPressed ? PLAYER_SPEED : 0);
-
+    const worldVX = (rightPressed ? PLAYER_SPEED : 0) + boost - (leftPressed ? PLAYER_SPEED : 0);
     worldX = Math.max(0, Math.min(TRACK_LENGTH, worldX + worldVX * dt));
 
-    // Parallax del fondo
+    // Parallax de fondo
     gameArea.style.backgroundPositionX = `${-worldX * 0.25}px`;
 
-    // Cueva visible al acercarte al final
-    if (worldX > TRACK_LENGTH - rect.width * 2) {
-      cave.style.display = "block";
-    } else {
-      cave.style.display = "none";
-    }
+    // Cueva
+    if (worldX > TRACK_LENGTH - rect.width * 2) cave.style.display = "block";
+    else cave.style.display = "none";
 
-    // Llegada a la cueva
     if (worldX >= TRACK_LENGTH) {
       running = false;
       alert("¡Llegaste a la cueva! 🥳");
       startScreen.classList.add("visible");
+    }
+
+    // Posicionar espada junto al oso (sin tocar transform del oso)
+    updateSwordPosition();
+    // Si estamos atacando, comprobar golpe
+    if (attacking) {
+      if (rectOverlap(sword.getBoundingClientRect(), obstacle.getBoundingClientRect())) {
+        destroyRock();
+      }
     }
   }
   requestAnimationFrame(moveLoop);
 }
 requestAnimationFrame(moveLoop);
 
-/* ---------- Salto (alto + impulso horizontal) ---------- */
+/* Posiciona la espada a la derecha o izquierda del oso */
+function updateSwordPosition(){
+  const offsetRight = 58;   // px desde el borde izquierdo del oso
+  const offsetLeft  = -48;  // px cuando mira a la izquierda
+  const x = (lastMoveDir > 0) ? (playerX + offsetRight) : (playerX + offsetLeft);
+  sword.style.left = `${x}px`;
+  // Animación/flip se hace via clases swing-right/left (con scaleX en keyframes)
+}
+
+/* ---------- Salto ---------- */
 function jump() {
   isJumping = true;
-
-  // Dirección del impulso: tecla actual o última usada
   const dir = rightPressed ? 1 : (leftPressed ? -1 : lastMoveDir);
-  lastMoveDir = dir;                       // recuerda la dirección
-  jumpBoostVX = JUMP_FORWARD_VX * dir;     // aplica signo (±)
+  lastMoveDir = dir;
+  jumpBoostVX = JUMP_FORWARD_VX * dir;
   jumpBoostUntil = performance.now() + JUMP_BOOST_TIME;
 
-  // Animación vertical (CSS)
   player.classList.add("jump");
-  setTimeout(() => {
-    player.classList.remove("jump");
-    isJumping = false;
-  }, 550);
+  setTimeout(() => { player.classList.remove("jump"); isJumping = false; }, 550);
 }
 
-/* ---------- Obstáculo (enemigo) ---------- */
+/* ---------- Ataque (espada desacoplada) ---------- */
+function doAttack(){
+  if (!running) return;
+  const now = performance.now();
+  if (now < attackCooldownUntil) return;
+
+  attackCooldownUntil = now + ATTACK_COOLDOWN;
+  attacking = true;
+
+  // Quita clases previas para reiniciar animación
+  sword.classList.remove("swing-right","swing-left");
+  // Forzar reflujo para reiniciar anim
+  void sword.offsetWidth;
+
+  if (lastMoveDir > 0) sword.classList.add("swing-right");
+  else                 sword.classList.add("swing-left");
+
+  // Fin de ataque
+  setTimeout(() => { attacking = false; }, 180);
+}
+
+/* ---------- Obstáculo ---------- */
 function restartObstacle() {
+  obstacle.classList.remove("disintegrate");
   obstacle.style.animation = "none";
-  void obstacle.offsetWidth; // reflow
+  void obstacle.offsetWidth;
   obstacle.style.animation = "moveObstacle 2s linear infinite";
 }
+function destroyRock(){
+  // efecto visual y respawn
+  obstacle.classList.add("disintegrate");
+  obstacle.style.animation = "none";
+  setTimeout(() => {
+    obstacle.classList.remove("disintegrate");
+    restartObstacle();
+  }, 280);
+}
 
-// Colisiones AABB (en pantalla)
+/* Utilidad solapamiento rects */
+function rectOverlap(a, b){
+  return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+}
+
+/* Colisiones “pisar” además del ataque */
 function isColliding(a, b) {
   const ra = a.getBoundingClientRect();
   const rb = b.getBoundingClientRect();
@@ -187,27 +241,15 @@ function isStomp(playerEl, obstEl) {
   const horizontalOverlap = !(rp.right < ro.left || rp.left > ro.right);
   return isJumping && verticalOK && horizontalOverlap;
 }
-
-// Pisar enemigo = eliminar; golpe lateral = fin
 setInterval(() => {
   if (!running) return;
-
   if (isColliding(player, obstacle)) {
     if (isStomp(player, obstacle)) {
-      obstacle.style.transition = "opacity .12s";
-      obstacle.style.opacity = "0";
-      setTimeout(() => {
-        obstacle.style.transition = "";
-        obstacle.style.opacity = "1";
-        restartObstacle();
-      }, 140);
+      destroyRock();
     } else if (!gameOverLock) {
       gameOverLock = true; running = false;
       alert("¡Te golpeó el enemigo!");
-      setTimeout(() => {
-        gameOverLock = false;
-        startScreen.classList.add("visible");
-      }, 250);
+      setTimeout(() => { gameOverLock = false; startScreen.classList.add("visible"); }, 250);
     }
   }
 }, 100);
