@@ -1,4 +1,4 @@
-/***** ELEMENTOS DEL DOM *****/
+// Elements
 const viewport = document.getElementById('viewport');
 const world = document.getElementById('world');
 const playerEl = document.getElementById('player');
@@ -6,232 +6,145 @@ const blocksEl = document.getElementById('blocks');
 const itemsEl = document.getElementById('items');
 const caveEl = document.getElementById('cave');
 const runnerRocksEl = document.getElementById('runnerRocks');
-
+const startOverlay = document.getElementById('startOverlay');
+const startBtn = document.getElementById('startBtn');
 const gameOverOverlay = document.getElementById('gameOverOverlay');
 const gameOverTitle = document.getElementById('gameOverTitle');
 const retryBtn = document.getElementById('retryBtn');
 const honeyHUD = document.getElementById('honeyHUD');
 
-/***** CONFIG *****/
+// Config (más fácil)
 const LEVEL_WIDTH = 12000;
 const GROUND_Y = 0;
-const GRAVITY = 1850;
+const GRAVITY = 1900;
 const RUN_SPEED = 100;
-const JUMP_VELOCITY = 840;
-const ROCK_SPEED = 90;
+const JUMP_VELOCITY = 780; // salto más alto
+const ROCK_SPEED = 105;    // rocas más lentas
 const PARALLAX_FACTOR = 0.3;
 
-// Salto hacia delante (más fácil)
-const JUMP_FORWARD_SPEED = 230;
-const JUMP_BOOST_TIME   = 420;
-const AIR_ACCEL         = 650;
-const MAX_AIR_SPEED     = 240;
-const AIR_DRIFT_MIN     = 140;
+// Player
+const player = { 
+  x:120, y:GROUND_Y, vx:0, vy:0, 
+  width:90, height:90, 
+  onGround:true, big:false, facing:1 
+};
 
-// Ataque
-const ATTACK_DURATION  = 180;
-const ATTACK_COOLDOWN  = 320;
-const ATTACK_RANGE_X   = 110;
-const ATTACK_RANGE_Y   = 90;
-
-// Rocas: separación y nunca dos juntas
-const ROCK_MIN_GAP       = 520;
-const ROCK_RESPAWN_BASE  = 260;
-const ROCK_RESPAWN_RAND  = 560;
-
-// Ajuste fino por si tu PNG de oso tiene margen transparente inferior
-const BEAR_BASELINE_OFFSET = -8;
-
-/***** ESTADO *****/
-const player = { x:120, y:GROUND_Y, vx:0, vy:0, width:90, height:90, onGround:true, big:false, facing:1 };
-let jumpBoostUntil = 0;
-let isAttacking = false;
-let attackUntil = 0;
-let nextAttackTime = 0;
-let last = 0;
-let running = true; // este index no tiene pantalla de inicio: entra jugando
-
-/***** Espada: crear nodo y fallback PNG si no hay GIF *****/
-(function attachSword(){
-  const s = document.createElement('div');
-  s.className = 'sword';
-  playerEl.appendChild(s);
-  const test = new Image();
-  test.onerror = () => { s.style.backgroundImage = 'url("img/Espada.png")'; };
-  test.src = 'img/Espada.gif';
-})();
-
-/***** UTILS *****/
-function elem(tag, className, style={}) {
-  const el = document.createElement(tag);
-  if (className) el.className = className;
-  Object.assign(el.style, style);
-  return el;
+// Utils
+function elem(tag, className, style={}) { 
+  const el = document.createElement(tag); 
+  if (className) el.className = className; 
+  Object.assign(el.style, style); 
+  return el; 
 }
-function aabb(a,b){ return !(a.x+a.width<b.x||a.x>b.x+b.width||a.y+a.height<b.y||a.y>b.y+b.height); }
-function playerRect(){
-  const w = player.width * (player.big?1.45:1);
-  const h = player.height * (player.big?1.45:1);
-  return { x:player.x, y:player.y, width:w, height:h };
-}
-function setHUDActive(active){ honeyHUD?.classList.toggle('active', !!active); }
 
-/***** NIVEL *****/
-let blocks = [];
-let items  = [];
-const caveX = LEVEL_WIDTH - 300;
+// Level: blocks + cave
+const blocks = [];
+const items  = [];
+function placeBlock(x) { 
+  const el = elem('div','block',{ left:x+'px' }); 
+  blocksEl.appendChild(el); 
+  blocks.push({ x, y:130, width:60, height:60, el, broken:false }); 
+}
+function placeHoney(x,y) { 
+  const el = elem('div','honey',{ left:x+'px', bottom:y+'px' }); 
+  itemsEl.appendChild(el); 
+  const it={ x, y, width:48, height:48, el, vy:0, onGround:false, taken:false }; 
+  items.push(it); 
+  return it; 
+}
+
+for (let x=500; x<LEVEL_WIDTH-800; x+=900) placeBlock(x);
+const caveX = LEVEL_WIDTH - 300; 
 caveEl.style.left = caveX + 'px';
 
-function placeBlock(x) {
-  const el = elem('div','block',{ left:x+'px' });
-  blocksEl.appendChild(el);
-  blocks.push({ x, y:130, width:60, height:60, el, broken:false });
+// Runner rocks
+const runnerRocks = [];
+function spawnRock(x) { 
+  const el = elem('div','runner-rock',{ left:x+'px' }); 
+  runnerRocksEl.appendChild(el); 
+  const r={ x, y:0, width:90, height:90, el }; 
+  runnerRocks.push(r); 
 }
-function placeHoney(x,y) {
-  const el = elem('div','honey',{ left:x+'px', bottom:y+'px' });
-  itemsEl.appendChild(el);
-  const it = { x, y, width:48, height:48, el, vy:0, onGround:false, taken:false };
-  items.push(it);
-  return it;
-}
-function buildLevel() {
-  blocksEl.innerHTML = '';
-  itemsEl.innerHTML = '';
-  blocks = [];
-  items = [];
-  for (let x=500; x<LEVEL_WIDTH-800; x+=900) placeBlock(x);
-}
-buildLevel();
+spawnRock(viewport.clientWidth + 150);
+spawnRock(viewport.clientWidth + 600);
+spawnRock(viewport.clientWidth + 1000);
 
-/***** ROCAS (runner) *****/
-let runnerRocks = [];
-function clearRocks() {
-  runnerRocksEl.innerHTML = '';
-  runnerRocks = [];
-}
-function spawnRock(x) {
-  const el = elem('div','runner-rock',{ left:x+'px' });
-  runnerRocksEl.appendChild(el);
-  const r = { x, y:0, width:70, height:70, el, dead:false };
-  runnerRocks.push(r);
-}
-function farthestRockX() {
-  let fx = viewport.clientWidth;
-  for (const o of runnerRocks) if (!o.dead && o.x > fx) fx = o.x;
-  return fx;
-}
-function spawnInitialRocks(){
-  clearRocks();
-  const vw = viewport.clientWidth || Math.min(1100, window.innerWidth || 1100);
-  const base = vw + 220;
-  spawnRock(base);
-  spawnRock(base + ROCK_MIN_GAP + 320);
-  spawnRock(base + 2*(ROCK_MIN_GAP + 320));
-}
-spawnInitialRocks();
-
-/***** CÁMARA + PARALLAX *****/
+// Camera + Parallax
 function updateCamera() {
   const center = Math.min(Math.max(player.x, viewport.clientWidth/2), LEVEL_WIDTH - viewport.clientWidth/2);
   const offset = -center + viewport.clientWidth/2;
   world.style.transform = `translateX(${offset}px)`;
+  // parallax background
   const parallaxX = -player.x * PARALLAX_FACTOR;
   viewport.style.backgroundPosition = `${parallaxX}px 0px`;
 }
 
-/***** INPUT *****/
-const keys = { left:false, right:false, jump:false, attack:false };
+// Input
+const keys = { left:false, right:false, jump:false };
 document.addEventListener('keydown', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-  if (e.code === 'Space') { e.preventDefault(); keys.jump = true; }
-  if (e.code === 'KeyS') keys.attack = true;
+  if (e.code === 'Space') keys.jump = true;
+  if ((e.code === 'Enter' || e.code === 'Space') && startOverlay.classList.contains('visible')) { 
+    e.preventDefault(); startGame(); 
+  }
 });
 document.addEventListener('keyup', e => {
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
   if (e.code === 'Space') keys.jump = false;
-  if (e.code === 'KeyS') keys.attack = false;
 });
 
-/***** ATAQUE *****/
-let isAttacking = false, attackUntil = 0, nextAttackTime = 0;
-function tryStartAttack(ts){
-  if (isAttacking || ts < nextAttackTime) return;
-  isAttacking = true;
-  attackUntil = ts + ATTACK_DURATION;
-  nextAttackTime = ts + ATTACK_COOLDOWN;
-  playerEl.classList.add('attacking');
-}
-function getAttackRect(pScreen){
-  if (player.facing > 0) {
-    return { x: pScreen.x + pScreen.width - 6, y: pScreen.y, width: ATTACK_RANGE_X, height: ATTACK_RANGE_Y };
-  } else {
-    return { x: pScreen.x - ATTACK_RANGE_X + 6, y: pScreen.y, width: ATTACK_RANGE_X, height: ATTACK_RANGE_Y };
-  }
+startBtn.addEventListener('click', startGame);
+retryBtn.addEventListener('click', () => location.reload());
+
+let running = false;
+function startGame() {
+  startOverlay.classList.remove('visible');
+  gameOverOverlay.classList.remove('visible');
+  running = true;
 }
 
-/***** LOOP *****/
+// AABB helpers
+function aabb(a,b){return !(a.x+a.width<b.x||a.x>b.x+b.width||a.y+a.height<b.y||a.y>b.y+b.height);}
+function playerRect(){ 
+  const w = player.width * (player.big?1.45:1); 
+  const h = player.height * (player.big?1.45:1); 
+  return { x:player.x, y:player.y, width:w, height:h }; 
+}
+function setHUDActive(active){ honeyHUD.classList.toggle('active', !!active); }
+
+let last = 0;
 function loop(ts) {
   if (!last) last = ts;
-  const dt = Math.min((ts-last)/1000, 0.033);
+  const dt = Math.min((ts - last)/1000, 0.033);
   last = ts;
 
   if (running) {
-    // Movimiento
-    let targetVx = 0;
-    if (keys.left)  targetVx -= RUN_SPEED;
-    if (keys.right) targetVx += RUN_SPEED;
-    if (targetVx !== 0) player.facing = (targetVx > 0 ? 1 : -1);
+    // Horizontal
+    let vx = 0;
+    if (keys.left) vx -= RUN_SPEED;
+    if (keys.right) vx += RUN_SPEED;
+    player.vx = vx;
+    if (vx !== 0) player.facing = (vx > 0 ? 1 : -1);
+
+    // Flip visual
     playerEl.classList.toggle('facing-left', player.facing < 0);
 
-    // Salto
-    if (keys.jump && player.onGround) {
-      player.vy = JUMP_VELOCITY;
-      player.onGround = false;
-      player.vx = (player.facing > 0) ? Math.max(player.vx,  JUMP_FORWARD_SPEED)
-                                      : Math.min(player.vx, -JUMP_FORWARD_SPEED);
-      jumpBoostUntil = ts + JUMP_BOOST_TIME;
-    }
+    // Jump
+    if (keys.jump && player.onGround) { player.vy = JUMP_VELOCITY; player.onGround = false; }
 
-    // Ataque
-    if (keys.attack) tryStartAttack(ts);
-    if (isAttacking && ts > attackUntil) { isAttacking = false; playerEl.classList.remove('attacking'); }
-
-    // Aire (drift y límite de velocidad)
-    if (!player.onGround) {
-      if (ts < jumpBoostUntil) {
-        const minV = (player.facing > 0) ?  JUMP_FORWARD_SPEED : -JUMP_FORWARD_SPEED;
-        if (player.facing > 0) player.vx = Math.max(player.vx, minV);
-        else                   player.vx = Math.min(player.vx, minV);
-      }
-      if (!keys.left && !keys.right) {
-        const driftV = (player.facing > 0) ?  AIR_DRIFT_MIN : -AIR_DRIFT_MIN;
-        if (player.facing > 0) player.vx = Math.max(player.vx, driftV);
-        else                   player.vx = Math.min(player.vx, driftV);
-      }
-      const desired = (keys.left ? -MAX_AIR_SPEED : 0) + (keys.right ? MAX_AIR_SPEED : 0);
-      if (desired !== 0) {
-        if (desired > player.vx) player.vx = Math.min(player.vx + AIR_ACCEL*dt, desired);
-        if (desired < player.vx) player.vx = Math.max(player.vx - AIR_ACCEL*dt, desired);
-      }
-      if (player.vx >  MAX_AIR_SPEED) player.vx =  MAX_AIR_SPEED;
-      if (player.vx < -MAX_AIR_SPEED) player.vx = -MAX_AIR_SPEED;
-    } else {
-      player.vx = targetVx;
-    }
-
-    // Física
+    // Physics
     player.vy -= GRAVITY * dt;
-    player.x  += player.vx * dt;
-    player.y  += player.vy * dt;
+    player.x += player.vx * dt;
+    player.y += player.vy * dt;
 
-    // Suelo y límites
-    if (player.y < GROUND_Y) { player.y = GROUND_Y; player.vy = 0; player.onGround = true; }
+    // Limits
     if (player.x < 0) player.x = 0;
     if (player.x > LEVEL_WIDTH - player.width) player.x = LEVEL_WIDTH - player.width;
+    if (player.y < GROUND_Y) { player.y = GROUND_Y; player.vy = 0; player.onGround = true; }
 
-    // Bloques -> panal
+    // Blocks: break from below -> drop honey
     const pR = playerRect();
     for (const bl of blocks) {
       const bR = { x: bl.x, y: bl.y, width: bl.width, height: bl.height };
@@ -244,12 +157,12 @@ function loop(ts) {
       }
     }
 
-    // Panal: cae y se recoge -> vida extra
+    // Items: fall to ground and pickup
     for (const it of items) {
       if (it.taken) continue;
       if (!it.onGround) {
         it.vy -= GRAVITY * 0.6 * dt;
-        it.y  += it.vy * dt;
+        it.y += it.vy * dt;
         if (it.y < GROUND_Y) { it.y = GROUND_Y; it.vy = 0; it.onGround = true; }
       }
       const iR = { x: it.x, y: it.y, width: it.width, height: it.height };
@@ -260,63 +173,38 @@ function loop(ts) {
       if (it.el) { it.el.style.left = it.x + 'px'; it.el.style.bottom = it.y + 'px'; }
     }
 
-    // Rocas runner
+    // Runner rocks
     for (const r of runnerRocks) {
-      if (r.dead) continue;
       r.x -= ROCK_SPEED * dt;
-
-      // Player en coordenadas de pantalla
+      if (r.x < -120) { r.x = viewport.clientWidth + Math.random()*600 + 260; }
       const center = Math.min(Math.max(player.x, viewport.clientWidth/2), LEVEL_WIDTH - viewport.clientWidth/2);
       const offset = -center + viewport.clientWidth/2;
       const pScreen = { x: player.x + offset, y: player.y, width: player.width*(player.big?1.45:1), height: player.height*(player.big?1.45:1) };
       const rRect   = { x: r.x, y: 0, width: r.width, height: r.height };
-
-      const overlap = aabb(pScreen, rRect);
-
-      if (overlap) {
-        if (isAttacking) {
-          const aRect = getAttackRect(pScreen);
-          if (aabb(aRect, rRect)) {
-            r.dead = true; r.el.style.opacity = '0'; r.x = -999;
-            setTimeout(() => {
-              r.el.style.opacity = '1'; r.dead = false;
-              let lastX = farthestRockX();
-              r.x = Math.max(viewport.clientWidth+ROCK_RESPAWN_BASE+Math.random()*ROCK_RESPAWN_RAND,
-                             lastX+ROCK_MIN_GAP+Math.random()*120);
-            }, 180);
-          }
-        } else {
-          if (player.big) { player.big = false; playerEl.classList.remove('big'); setHUDActive(false); }
-          else { running = false; gameOverTitle.textContent = '¡Ay! Te golpeó una roca'; gameOverOverlay.classList.add('visible'); }
-          r.x = -120;
-        }
-      }
-
-      // Respawn con separación: nunca dos juntas
-      if (r.x < -140 && !r.dead) {
-        let lastX = farthestRockX();
-        r.x = Math.max(viewport.clientWidth+ROCK_RESPAWN_BASE+Math.random()*ROCK_RESPAWN_RAND,
-                       lastX+ROCK_MIN_GAP+Math.random()*120);
+      const coll = !((pScreen.x + pScreen.width - 12) < (rRect.x + 12) ||
+                     (pScreen.x + 12) > (rRect.x + rRect.width - 12) ||
+                     (pScreen.y + pScreen.height - 12) < (rRect.y + 12) ||
+                     (pScreen.y + 12) > (rRect.y + rRect.height - 12));
+      if (coll) {
+        if (player.big) { player.big = false; playerEl.classList.remove('big'); setHUDActive(false); }
+        else { running = false; gameOverTitle.textContent = '¡Ay! Te golpeó una roca'; gameOverOverlay.classList.add('visible'); }
+        r.x = -140;
       }
       r.el.style.left = r.x + 'px';
     }
   }
 
-  // Render (alineado exacto con las rocas)
+  // Render
   playerEl.style.left = player.x + 'px';
-  playerEl.style.bottom = (Math.max(player.y, GROUND_Y) + BEAR_BASELINE_OFFSET) + 'px';
-
+  playerEl.style.bottom = player.y + 'px';
   for (const b of blocks) b.el.style.bottom = b.y + 'px';
 
-  // Meta
+  // Win condition
   const caveRect = { x: caveX, y: 0, width: 180, height: 160 };
-  if (aabb(playerRect(), caveRect)) {
-    running = false;
-    gameOverTitle.textContent = '¡Llegaste a tu cueva! 🥳';
-    gameOverOverlay.classList.add('visible');
-  }
+  if (aabb(playerRect(), caveRect)) { running = false; gameOverTitle.textContent = '¡Llegaste a tu cueva! 🥳'; gameOverOverlay.classList.add('visible'); }
 
   updateCamera();
   requestAnimationFrame(loop);
 }
+
 requestAnimationFrame(loop);
