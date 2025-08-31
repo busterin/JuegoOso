@@ -1,6 +1,7 @@
 const gameArea = document.getElementById("gameArea");
 const player   = document.getElementById("player");
 const swordEl  = document.getElementById("sword");
+const sparkEl  = document.getElementById("spark");
 const obstacle = document.getElementById("obstacle");
 const cave     = document.getElementById("cave");
 
@@ -55,10 +56,16 @@ function startGame() {
   cave.style.display = "none";
   gameOverLock = false;
 
-  // Reset visual espada
-  swordEl.style.opacity = "0";
-  swordEl.style.left = "-9999px";
-  swordEl.classList.remove("swing-right","swing-left");
+  // Reset visual espada/destello
+  if (swordEl) {
+    swordEl.style.opacity = "0";
+    swordEl.style.left = "-9999px";
+    swordEl.classList.remove("swing-right","swing-left");
+  }
+  if (sparkEl) {
+    sparkEl.style.left = "-9999px";
+    sparkEl.classList.remove("burst");
+  }
 
   restartObstacle();
 }
@@ -163,33 +170,53 @@ function doAttack(){
   if (now < attackCooldownUntil) return;
   attackCooldownUntil = now + ATTACK_COOLDOWN;
 
-  // Posición REAL del oso desde el DOM (evita desajustes)
-  const px = player.offsetLeft;
+  // Coordenadas relativas a .game (para posicionar espada/spark con precisión)
+  const gameRect = gameArea.getBoundingClientRect();
+  const pr = player.getBoundingClientRect();
+  const playerLeftInGame = pr.left - gameRect.left;
+  const playerRightInGame = pr.right - gameRect.left;
 
-  // Coloca la espada visual y la hace visible explícitamente
-  const x = lastMoveDir > 0 ? (px + 58) : (px - 48);
+  // Posición y visual de la espada (forzamos visibilidad)
+  const x = lastMoveDir > 0 ? (playerRightInGame - 12) : (playerLeftInGame - 58);
   swordEl.style.left = `${x}px`;
   swordEl.style.bottom = "18px";
-  swordEl.style.opacity = "1";       // 👈 forzamos visibilidad
-  swordEl.style.display = "block";   // 👈 por si algún estilo la ocultara
+  swordEl.style.opacity = "1";
+  swordEl.style.display = "block";
+  swordEl.style.visibility = "visible";
   swordEl.classList.remove("swing-right","swing-left");
   void swordEl.offsetWidth; // reset anim
   swordEl.classList.add(lastMoveDir > 0 ? "swing-right" : "swing-left");
 
-  // Hitbox virtual delante del oso para el daño
-  const pr = player.getBoundingClientRect();
+  // Hitbox virtual delante del oso (para daño)
   const hitbox = (lastMoveDir > 0)
     ? { left: pr.right, right: pr.right + 60, top: pr.bottom - 70, bottom: pr.bottom - 20 }
     : { left: pr.left - 60, right: pr.left, top: pr.bottom - 70, bottom: pr.bottom - 20 };
 
+  // Comprobar contra roca
   const or = obstacle.getBoundingClientRect();
-  const overlaps = !(hitbox.right < or.left || hitbox.left > or.right || hitbox.bottom < or.top || hitbox.top > or.bottom);
-  if (overlaps) destroyRock();
+  const hit = !(hitbox.right < or.left || hitbox.left > or.right || hitbox.bottom < or.top || hitbox.top > or.bottom);
+  if (hit) {
+    // Destello en el punto de contacto (frente del oso)
+    const sparkX = lastMoveDir > 0 ? (playerRightInGame + 20) : (playerLeftInGame - 20 - 34);
+    sparkEl.style.left = `${sparkX}px`;
+    sparkEl.style.bottom = "42px"; // aprox: mitad del golpe
+    sparkEl.classList.remove("burst");
+    void sparkEl.offsetWidth;
+    sparkEl.classList.add("burst");
+
+    destroyRock();
+  } else {
+    // Destello “al aire” delante del oso para feedback
+    const sparkX = lastMoveDir > 0 ? (playerRightInGame + 14) : (playerLeftInGame - 14 - 34);
+    sparkEl.style.left = `${sparkX}px`;
+    sparkEl.style.bottom = "38px";
+    sparkEl.classList.remove("burst");
+    void sparkEl.offsetWidth;
+    sparkEl.classList.add("burst");
+  }
 
   // Oculta la espada tras el swing
-  setTimeout(() => {
-    swordEl.style.opacity = "0";
-  }, 200);
+  setTimeout(() => { swordEl.style.opacity = "0"; }, 240);
 }
 
 /* ---------- Obstáculo ---------- */
