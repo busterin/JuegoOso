@@ -50,46 +50,31 @@ h1 { margin: 16px 0 8px; }
   background-image: url("img/Oso.png");
   background-size: contain;
   background-repeat: no-repeat;
-  background-position: center calc(100% + 10px); /* 🔧 compensación suelo */
+  background-position: center calc(100% + 10px); /* compensación suelo */
   transform-origin: bottom center;
   z-index: 2;
 }
 
 /* --- ESPADA desacoplada (visual) --- */
-/* Doble selector (#sword y .sword) por si el HTML difiere */
 #sword, .sword {
   position: absolute;
-  bottom: 18px;            /* altura “mano” aprox */
-  left: -9999px;           /* se recoloca por JS */
+  bottom: 18px;
+  left: -9999px;
   width: 70px; height: 70px;
   background: url("img/Espada.png") center/contain no-repeat;
-  opacity: 0;              /* visible solo al atacar */
-  display: block;          /* aseguramos que no esté hidden */
-  visibility: visible;     /* idem */
+  opacity: 0;
+  display: block;
+  visibility: visible;
   pointer-events: none;
-  z-index: 4;              /* por encima de roca y oso */
+  z-index: 4;
   transform-origin: 10% 80%;
-  /* 🟣 Recuadro de depuración: quítalo cuando confirmes que se ve */
+  /* Depuración: quita el outline al confirmar */
   outline: 2px dashed magenta;
 }
-
-/* Swing al atacar (solo efecto visual) */
-#sword.swing-right, .sword.swing-right {
-  animation: swingRight 220ms ease-out forwards;
-  opacity: 1;
-}
-#sword.swing-left, .sword.swing-left {
-  animation: swingLeft 220ms ease-out forwards;
-  opacity: 1;
-}
-@keyframes swingRight {
-  0%   { transform: rotate(40deg) translateX(-10px); }
-  100% { transform: rotate(-35deg) translateX(6px); }
-}
-@keyframes swingLeft {
-  0%   { transform: scaleX(-1) rotate(40deg) translateX(-10px); }
-  100% { transform: scaleX(-1) rotate(-35deg) translateX(6px); }
-}
+#sword.swing-right, .sword.swing-right { animation: swingRight 220ms ease-out forwards; opacity: 1; }
+#sword.swing-left,  .sword.swing-left  { animation: swingLeft  220ms ease-out forwards; opacity: 1; }
+@keyframes swingRight { 0% {transform: rotate(40deg) translateX(-10px);} 100% {transform: rotate(-35deg) translateX(6px);} }
+@keyframes swingLeft  { 0% {transform: scaleX(-1) rotate(40deg) translateX(-10px);} 100% {transform: scaleX(-1) rotate(-35deg) translateX(6px);} }
 
 /* ✨ Destello (spark) */
 #spark {
@@ -102,26 +87,20 @@ h1 { margin: 16px 0 8px; }
   z-index: 5;
   opacity: 0;
 }
-#spark.burst {
-  animation: sparkPop 260ms ease-out forwards;
-}
-@keyframes sparkPop {
-  0%   { transform: scale(0.6); opacity: 0.0; }
-  30%  { transform: scale(1.2); opacity: 1; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
+#spark.burst { animation: sparkPop 260ms ease-out forwards; }
+@keyframes sparkPop { 0%{transform:scale(0.6);opacity:0;} 30%{transform:scale(1.2);opacity:1;} 100%{transform:scale(1.6);opacity:0;} }
 
 /* --- OBSTÁCULO (ROCA) --- */
 #obstacle {
   position: absolute;
   bottom: 0;
-  right: -50px;
+  right: -50px;           /* se resetea por JS */
   width: 50px; height: 50px;
   background-image: url("img/Roca.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
-  animation: moveObstacle 2s linear infinite;
+  /* ❗ Sin animación infinita aquí. La lanza JS con duración y pausas. */
   z-index: 1;
 }
 @keyframes moveObstacle {
@@ -130,20 +109,17 @@ h1 { margin: 16px 0 8px; }
 }
 
 /* Efecto destruir roca */
-#obstacle.disintegrate {
-  animation: rockVanish .28s ease forwards;
-}
+#obstacle.disintegrate { animation: rockVanish .28s ease forwards; }
 @keyframes rockVanish {
-  0%   { opacity: 1; transform: scale(1); filter: blur(0); }
-  70%  { opacity: .35; transform: scale(1.15); filter: blur(2px); }
-  100% { opacity: 0; transform: scale(1.25) translateY(-6px); filter: blur(4px); }
+  0% { opacity:1; transform:scale(1); filter:blur(0); }
+  70%{ opacity:.35; transform:scale(1.15); filter:blur(2px); }
+  100%{ opacity:0; transform:scale(1.25) translateY(-6px); filter:blur(4px); }
 }
 
 /* --- CUEVA --- */
 #cave {
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: 0; right: 0;
   width: 100px; height: 100px;
   background: url("img/Cueva.png") bottom center / contain no-repeat;
   display: none;
@@ -151,11 +127,7 @@ h1 { margin: 16px 0 8px; }
 
 /* --- SALTO --- */
 .jump { animation: jump 0.55s ease; }
-@keyframes jump {
-  0%   { bottom: 0; }
-  50%  { bottom: 120px; }
-  100% { bottom: 0; }
-}
+@keyframes jump { 0%{bottom:0;} 50%{bottom:120px;} 100%{bottom:0;} }
 
 /* Controles móviles */
 .controls {
@@ -167,8 +139,5 @@ h1 { margin: 16px 0 8px; }
   background:#fff; font-size:22px; font-weight:700;
   touch-action: manipulation;
 }
-
 /* Ocultar controles en escritorio ancho */
-@media (min-width: 1200px) {
-  .controls { display:none; }
-}
+@media (min-width: 1200px) { .controls { display:none; } }
