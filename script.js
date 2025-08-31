@@ -12,45 +12,23 @@ const btnJump  = document.getElementById("btnJump");
 
 let isJumping = false;
 let score = 0;
-let running = false;     // el juego arranca en pausa (pantalla de inicio)
+let running = false;     // juego arranca en pausa (overlay)
 let gameOverLock = false;
 
 let leftPressed = false;
 let rightPressed = false;
 
-let playerX = 50; // debe coincidir con el CSS inicial
-const PLAYER_SPEED = 240; // px/seg
+// Posición X del oso y límites
+let playerX = 50;         // posición inicial (coincide con CSS)
+const PLAYER_WIDTH = 80;  // coincide con CSS
+const PLAYER_SPEED = 260; // px/s (ligeramente más rápido para compensar tamaño)
 
-/* --------- PRE-CARGA DE IMÁGENES + AVISOS --------- */
-function preloadImg(src) {
-  return new Promise((resolve) => {
-    const im = new Image();
-    im.onload = () => resolve({ src, ok: true });
-    im.onerror = () => resolve({ src, ok: false });
-    im.src = src;
-  });
-}
-async function checkAssets() {
-  const assets = ["img/Fondo.jpg","img/Oso.png","img/Roca.png"];
-  const results = await Promise.all(assets.map(preloadImg));
-  const failed = results.filter(r => !r.ok).map(r => r.src);
-
-  // Si falta el fondo, aplica una clase para un color de respaldo
-  if (!results.find(r => r.src.includes("Fondo.jpg") && r.ok)) {
-    gameArea.classList.add("noimg-bg");
-  }
-
-  if (failed.length) {
-    const warn = document.createElement("div");
-    warn.className = "img-warning";
-    warn.textContent = "⚠️ Faltan imágenes: " + failed.join(", ");
-    document.body.appendChild(warn);
-    // auto-ocultar a los 6s
-    setTimeout(() => warn.remove(), 6000);
-  }
-}
-// Lanza la verificación (no bloquea el juego)
-checkAssets();
+/* ---- Impulso hacia delante en el salto ---- */
+const JUMP_FORWARD_VX = 260;   // velocidad horizontal añadida durante el salto
+const JUMP_BOOST_TIME = 360;   // ms de impulso
+let jumpBoostVX = 0;
+let jumpBoostUntil = 0;
+let lastMoveDir = 1;           // 1 derecha, -1 izquierda
 
 /* ---------- Inicio ---------- */
 playBtn.addEventListener("click", () => {
@@ -76,10 +54,10 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     if (running && !isJumping) jump();
   }
-  if (event.code === "ArrowLeft")  leftPressed  = true;
-  if (event.code === "ArrowRight") rightPressed = true;
+  if (event.code === "ArrowLeft")  { leftPressed  = true; lastMoveDir = -1; }
+  if (event.code === "ArrowRight") { rightPressed = true; lastMoveDir =  1; }
 
-  // Arrancar con Enter/Espacio desde el overlay
+  // Arrancar también con Enter/Espacio desde overlay
   if ((event.code === "Enter" || event.code === "Space") && startScreen.classList.contains("visible")) {
     event.preventDefault();
     playBtn.click();
@@ -101,8 +79,8 @@ function bindHold(btn, on, off){
   btn.addEventListener("mouseup",    end);
   btn.addEventListener("mouseleave", end);
 }
-bindHold(btnLeft,  ()=> leftPressed = true,  ()=> leftPressed = false);
-bindHold(btnRight, ()=> rightPressed = true, ()=> rightPressed = false);
+bindHold(btnLeft,  ()=>{ leftPressed  = true; lastMoveDir = -1; }, ()=> leftPressed = false);
+bindHold(btnRight, ()=>{ rightPressed = true; lastMoveDir =  1; }, ()=> rightPressed = false);
 bindHold(btnJump,  ()=>{ if (running && !isJumping) jump(); }, ()=>{});
 
 /* ---------- Movimiento del oso ---------- */
@@ -114,10 +92,16 @@ function moveLoop(t){
 
   if (running){
     const gameRect = gameArea.getBoundingClientRect();
-    const maxX = gameRect.width - 60; // 60px ancho del oso
+    const maxX = gameRect.width - PLAYER_WIDTH;
     let vx = 0;
     if (leftPressed)  vx -= PLAYER_SPEED;
     if (rightPressed) vx += PLAYER_SPEED;
+
+    // Impulso del salto si sigue activo
+    if (performance.now() < jumpBoostUntil) {
+      vx += jumpBoostVX;
+    }
+
     playerX = Math.max(0, Math.min(maxX, playerX + vx * dt));
     player.style.left = playerX + "px";
   }
@@ -125,14 +109,21 @@ function moveLoop(t){
 }
 requestAnimationFrame(moveLoop);
 
-/* ---------- Salto ---------- */
+/* ---------- Salto (alto + impulso horizontal) ---------- */
 function jump() {
   isJumping = true;
+
+  // Determinar dirección del impulso
+  const dir = rightPressed ? 1 : (leftPressed ? -1 : lastMoveDir);
+  jumpBoostVX = JUMP_FORWARD_VX * dir;
+  jumpBoostUntil = performance.now() + JUMP_BOOST_TIME;
+
+  // Animación vertical (CSS)
   player.classList.add("jump");
   setTimeout(() => {
     player.classList.remove("jump");
     isJumping = false;
-  }, 500);
+  }, 550); // acorde a .jump 0.55s
 }
 
 /* Reinicia animación del obstáculo (desde la derecha) */
@@ -163,7 +154,7 @@ function isStomp(playerEl, obstEl) {
   return isJumping && verticalOK && horizontalOverlap;
 }
 
-/* ---------- Bucle del juego ---------- */
+/* ---------- Bucle de juego (puntuación + colisiones) ---------- */
 setInterval(() => {
   if (!running) return;
 
@@ -187,7 +178,7 @@ setInterval(() => {
       scoreText.innerText = "Puntuación: " + score;
       setTimeout(() => {
         gameOverLock = false;
-        startScreen.classList.add("visible");
+        startScreen.classList.add("visible"); // volver a inicio
       }, 250);
     }
   } else {
