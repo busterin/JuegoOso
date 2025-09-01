@@ -1,97 +1,64 @@
 /* Base */
 * { box-sizing: border-box; }
 :root { --dayCycle: 60s; --scale: 1; }
-body {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  background: #f0f0f0;
-  margin: 0;
-}
+body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 
-/* Overlays pantalla completa */
+/* Overlays */
 .overlay {
-  position: fixed; inset: 0;
-  display:none;
+  position: fixed; inset: 0; display:none;
   align-items:center; justify-content:center;
-  background: rgba(0,0,0,.6);
-  z-index: 2000;
+  background: rgba(0,0,0,.6); z-index: 2000;
 }
 .overlay.visible { display:flex; }
 .overlay-box {
   background:#fff; border:2px solid #333; border-radius:14px;
   padding:24px 28px; max-width: 500px; width:90%; text-align: center;
 }
-.overlay-actions {
-  display:flex; gap:14px; justify-content:center; margin-top:16px;
-}
-
-/* Botones */
+.overlay-actions { display:flex; gap:14px; justify-content:center; margin-top:16px; }
 .btn {
   display:inline-block; padding:12px 20px; border-radius:10px; border:2px solid #333;
   background:#fff; cursor:pointer; font-weight:700;
   box-shadow:0 4px 0 #333; transition:transform .06s ease, box-shadow .2s ease;
 }
-.btn:hover { transform: translateY(-1px); }
-.btn:active { transform: translateY(2px); box-shadow:0 2px 0 #333; }
 .btn.primary { background:#2ecc71; border-color:#2ecc71; color:#fff; box-shadow:0 4px 0 #239d57; }
 
 /* Contenedor responsive del juego (wrapper) */
-.game {
-  width: 100vw;              /* usar todo el ancho de la ventana */
-  max-width: 1100px;         /* límite para pantallas grandes */
-  margin: 10px auto;
-}
+.game { width: 100vw; max-width: 1100px; margin: 10px auto; }
 
-/* Escenario base que se escala */
+/* Escenario base (600×200) que se escala */
 .stage {
-  position: relative;
-  width: 600px;   /* base lógica */
-  height: 200px;  /* base lógica */
-  margin: 0 auto;
-
-  /* Fondo tileable */
-  background-color: #fff;
-  background-image: url("img/FondoTile.PNG");
-  background-repeat: repeat-x;
-  background-position: left bottom;
-  background-size: auto 100%;
-
-  border: 2px solid #333;
-  overflow: hidden;
-
-  /* Escalado */
-  transform: scale(var(--scale));
-  transform-origin: top center;
+  position: relative; width: 600px; height: 200px; margin: 0 auto;
+  background:#fff url("img/FondoTile.PNG") repeat-x bottom/auto 100%;
+  border: 2px solid #333; overflow: hidden;
+  transform: scale(var(--scale)); transform-origin: top center;
 }
 
-/* ✨ Capa de cielo con ciclo día-noche */
+/* Cielo día-noche */
 .sky-tint {
-  position: absolute; inset: 0;
-  z-index: 0; pointer-events: none;
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
   mix-blend-mode: multiply; opacity: 0.9;
   animation: skyCycle var(--dayCycle) linear infinite;
 }
 @keyframes skyCycle {
-  0%{background:transparent;}
-  25%{background:rgba(255,200,120,0.18);}
-  50%{background:rgba(30,60,120,0.38);}
-  75%{background:rgba(255,120,160,0.22);}
+  0%{background:transparent;} 25%{background:rgba(255,200,120,0.18);}
+  50%{background:rgba(30,60,120,0.38);} 75%{background:rgba(255,120,160,0.22);}
   100%{background:transparent;}
 }
 
-/* Oso */
+/* Oso caminando (sprite sheet con 4 frames) */
 #player {
   position: absolute; bottom: 0; left: 50px;
   width: 80px; height: 80px;
-  background:url("img/Oso.png") center calc(100% + 10px)/contain no-repeat;
-  transform-origin: bottom center;
-  z-index: 2;
+  /* 👇 nombre exacto con PNG en mayúsculas */
+  background:url("img/OsoWalk.PNG") 0 0/400% 100% no-repeat;
+  transform-origin: bottom center; z-index: 2;
 }
+#player.walk { animation: walk 0.8s steps(4) infinite; }
+@keyframes walk { from { background-position-x: 0%; } to { background-position-x: -400%; } }
 
 /* Espada */
 #sword { position:absolute; bottom:18px; left:-9999px;
-  width:70px; height:70px;
-  background:url("img/Espada.png") center/contain no-repeat;
+  width:70px; height:70px; background:url("img/Espada.png") center/contain no-repeat;
   opacity:0; z-index:4; transform-origin:10% 80%;
 }
 #sword.swing-right {animation:swingRight 220ms ease-out forwards; opacity:1;}
@@ -99,7 +66,7 @@ body {
 @keyframes swingRight{0%{transform:rotate(40deg);}100%{transform:rotate(-35deg);}}
 @keyframes swingLeft {0%{transform:scaleX(-1) rotate(40deg);}100%{transform:scaleX(-1) rotate(-35deg);}}
 
-/* Spark */
+/* Destello */
 #spark {position:absolute;width:34px;height:34px;left:-9999px;bottom:0;border-radius:50%;
   background:radial-gradient(circle,rgba(255,255,120,0.95)0%,rgba(255,170,0,0.9)50%,rgba(255,140,0,0)70%);
   z-index:5;opacity:0;}
@@ -121,28 +88,15 @@ body {
 .jump{animation:jump .55s ease;}
 @keyframes jump{0%{bottom:0;}50%{bottom:120px;}100%{bottom:0;}}
 
-/* Controles móviles: barra flotante fija (solo en pantallas <= 1200px) */
+/* Controles móviles: barra flotante fija (solo <=1200px) */
 .controls{
   position: fixed; left:50%; transform: translateX(-50%);
-  bottom: 10px;
-  display:flex; gap:12px; justify-content:center; align-items:center;
-  padding:10px 12px;
-  background: rgba(255,255,255,0.9);
-  border: 2px solid #333;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  z-index: 1500;
-  backdrop-filter: blur(4px);
+  bottom: 10px; display:flex; gap:12px; justify-content:center; align-items:center;
+  padding:10px 12px; background: rgba(255,255,255,0.9);
+  border: 2px solid #333; border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15); z-index: 1500; backdrop-filter: blur(4px);
   max-width: calc(100vw - 20px);
 }
-.ctrl{
-  width:min(22vw,120px); max-width:140px;
-  height:56px; border:2px solid #333; border-radius:10px;
-  background:#fff; font-size:22px; font-weight:700;
-  touch-action: manipulation;
-}
-
-/* Ocultar barra de controles en escritorio ancho */
-@media (min-width: 1200px){
-  .controls{ display:none; }
-}
+.ctrl{width:min(22vw,120px); max-width:140px; height:56px; border:2px solid #333; border-radius:10px;
+  background:#fff; font-size:22px; font-weight:700; touch-action: manipulation;}
+@media (min-width: 1200px){.controls{display:none;}}
