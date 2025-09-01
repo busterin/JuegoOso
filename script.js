@@ -50,7 +50,7 @@ function fitStage() {
 }
 
 /* ================== Estado del juego ================== */
-let running=false,isJumping=false,gameOverLock=false;
+let running=false,isJumping=false,gameOverLock=false,hasWon=false;
 let leftPressed=false,rightPressed=false;
 let playerX=50,lastMoveDir=1,worldX=0;
 
@@ -99,7 +99,7 @@ let obstacleTimer=null;
 function rand(a,b){return Math.random()*(b-a)+a;}
 function randi(a,b){return Math.floor(rand(a,b));}
 function spawnObstacle(){
-  if(!running) return;
+  if(!running || hasWon) return;
   obstacle.classList.remove("disintegrate");
   obstacle.style.opacity="1";
   obstacle.style.right="-50px";
@@ -109,7 +109,7 @@ function spawnObstacle(){
 function scheduleNextObstacle(ms){ clearTimeout(obstacleTimer); obstacleTimer=setTimeout(spawnObstacle, ms); }
 obstacle.addEventListener("animationend",()=>{
   obstacle.style.animation="none";
-  scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));
+  if(!hasWon) scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));
 });
 
 /* ================== Inicio / reinicio ================== */
@@ -124,7 +124,7 @@ retryLoseBtn.onclick=()=>{ gameOverOverlay.classList.remove("visible"); startGam
 homeLoseBtn.onclick =()=>{ gameOverOverlay.classList.remove("visible"); startScreen.classList.add("visible"); };
 
 function startGame(){
-  running=true; isJumping=false; gameOverLock=false;
+  running=true; isJumping=false; gameOverLock=false; hasWon=false;
   leftPressed=rightPressed=false; playerX=50; worldX=0; lastMoveDir=1;
 
   lives=MAX_LIVES; invulnerableUntil=0; renderLives();
@@ -180,7 +180,6 @@ function moveLoop(t){
   lastTime=t;
 
   if(running){
-    // Usamos SIEMPRE el ancho lógico del escenario
     const visibleW = BASE_W;
 
     let vx=0;
@@ -209,10 +208,19 @@ function moveLoop(t){
       moveBG(gameArea, 0.25);
     }
 
-    if(worldX > TRACK_LENGTH - visibleW * 2) cave.style.display="block";
-    else cave.style.display="none";
+    // Mostrar cueva y reducir riesgos en la recta final
+    if(worldX > TRACK_LENGTH - visibleW * 2){
+      cave.style.display="block";
+      // Detener spawns en los últimos metros
+      clearTimeout(obstacleTimer);
+    } else {
+      cave.style.display="none";
+    }
 
-    if(worldX>=TRACK_LENGTH) onVictory();
+    // Llegada: victoria prioritaria y limpieza de rocas
+    if(worldX>=TRACK_LENGTH){
+      onVictory();
+    }
   }
   requestAnimationFrame(moveLoop);
 }
@@ -233,7 +241,7 @@ function jump(){
 /* ================== Ataque (corregido para escala) ================== */
 let attackCooldownUntil=0;
 function doAttack(){
-  if(!running) return;
+  if(!running || hasWon) return;
   const now=performance.now();
   if(now<attackCooldownUntil) return;
   attackCooldownUntil=now+220;
@@ -271,11 +279,17 @@ function doAttack(){
 
 /* ================== Victoria / Game Over ================== */
 function onVictory(){
-  running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
+  if(hasWon) return;      // evitar dobles llamadas
+  hasWon = true;
+  running=false;
+  clearTimeout(obstacleTimer);
+  obstacle.style.animation="none";
+  obstacle.style.opacity="0";     // ocultar la roca por si estaba presente
   victoryOverlay.classList.add("visible");
   updateOrientationOverlay();
 }
 function onGameOver(){
+  if(hasWon) return;      // si ya ganaste, no puedes perder
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
   gameOverOverlay.classList.add("visible");
   updateOrientationOverlay();
@@ -287,7 +301,7 @@ function destroyRock(){
   obstacle.classList.add("disintegrate");
   setTimeout(()=>{
     obstacle.classList.remove("disintegrate");
-    scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));
+    if(!hasWon) scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));
   }, 280);
 }
 function resetRockAfterHit(){
@@ -295,7 +309,7 @@ function resetRockAfterHit(){
   obstacle.classList.remove("disintegrate");
   obstacle.style.opacity="1";
   obstacle.style.right="-50px";
-  scheduleNextObstacle(900);
+  if(!hasWon) scheduleNextObstacle(900);
 }
 
 /* ================== Colisiones ================== */
@@ -318,8 +332,9 @@ document.addEventListener("DOMContentLoaded", ()=>{
   updateOrientationOverlay(); // mostrar aviso en portada si está en vertical
 });
 
+/* Detección de colisiones (se ignoran si hasWon=true) */
 setInterval(()=>{
-  if(!running) return;
+  if(!running || hasWon) return;
 
   if(isColliding(player, obstacle)){
     if(isStomp(player, obstacle)){
