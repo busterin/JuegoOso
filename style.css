@@ -1,9 +1,6 @@
 /* Base */
 * { box-sizing: border-box; }
-:root {
-  /* Duración del ciclo día-noche */
-  --dayCycle: 60s;
-}
+:root { --dayCycle: 60s; }
 body {
   font-family: Arial, sans-serif;
   text-align: center;
@@ -12,7 +9,32 @@ body {
 }
 h1 { margin: 16px 0 8px; }
 
-/* Botones / overlays */
+/* Overlays pantalla completa */
+.overlay {
+  position: fixed; inset: 0;
+  display:none;
+  align-items:center; justify-content:center;
+  background: rgba(0,0,0,.6);
+  z-index: 2000;
+}
+.overlay.visible { display:flex; }
+.overlay-box {
+  background:#fff;
+  border:2px solid #333;
+  border-radius:14px;
+  padding:24px 28px;
+  max-width: 500px;
+  width:90%;
+  text-align: center;
+}
+.overlay-actions {
+  display:flex;
+  gap:14px;
+  justify-content:center;
+  margin-top:16px;
+}
+
+/* Botones */
 .btn {
   display:inline-block; padding:12px 20px; border-radius:10px; border:2px solid #333;
   background:#fff; cursor:pointer; font-weight:700;
@@ -22,152 +44,79 @@ h1 { margin: 16px 0 8px; }
 .btn:active { transform: translateY(2px); box-shadow:0 2px 0 #333; }
 .btn.primary { background:#2ecc71; border-color:#2ecc71; color:#fff; box-shadow:0 4px 0 #239d57; }
 
-/* Overlay inicio */
-.overlay {
-  position: fixed; inset: 0; display:none; align-items:center; justify-content:center;
-  background: rgba(0,0,0,.35); z-index: 1000;
-}
-.overlay.visible { display:flex; }
-.overlay-box {
-  background:#fff; border:2px solid #333; border-radius:14px; padding:20px 24px;
-  width:min(520px, 92vw);
-}
-
 /* Juego */
 .game {
   position: relative;
   margin: 20px auto 10px;
   width: 600px;
   height: 200px;
-
-  /* 🔹 Tile repetible (OJO a mayúsculas de la extensión) */
-  background-color: #ffffff;
+  background-color: #fff;
   background-image: url("img/FondoTile.PNG");
   background-repeat: repeat-x;
   background-position: left bottom;
   background-size: auto 100%;
-
   border: 2px solid #333;
   overflow: hidden;
 }
 
-/* ✨ Capa de cielo con ciclo día-noche (por encima del fondo, por debajo de sprites) */
+/* ✨ Capa de cielo con ciclo día-noche */
 .sky-tint {
   position: absolute; inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-  opacity: 0.9;
+  z-index: 0; pointer-events: none;
+  mix-blend-mode: multiply; opacity: 0.9;
   animation: skyCycle var(--dayCycle) linear infinite;
-  background: linear-gradient(to top, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.00) 100%);
 }
 @keyframes skyCycle {
-  0% {
-    background: linear-gradient(to top, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.00) 100%);
-  }
-  25% {
-    background: linear-gradient(to top, rgba(255,200,120,0.18) 0%, rgba(255,220,180,0.10) 100%);
-  }
-  50% {
-    background: linear-gradient(to top, rgba(30,60,120,0.38) 0%, rgba(10,20,60,0.48) 100%);
-  }
-  75% {
-    background: linear-gradient(to top, rgba(255,120,160,0.22) 0%, rgba(255,200,220,0.12) 100%);
-  }
-  100% {
-    background: linear-gradient(to top, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.00) 100%);
-  }
+  0%{background:transparent;}
+  25%{background:rgba(255,200,120,0.18);}
+  50%{background:rgba(30,60,120,0.38);}
+  75%{background:rgba(255,120,160,0.22);}
+  100%{background:transparent;}
 }
 
-/* --- JUGADOR (OSO) --- */
+/* Oso */
 #player {
-  position: absolute;
-  bottom: 0;
-  left: 50px;
-  width: 80px;
-  height: 80px;
-  background-image: url("img/Oso.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center calc(100% + 10px);
+  position: absolute; bottom: 0; left: 50px;
+  width: 80px; height: 80px;
+  background:url("img/Oso.png") center calc(100% + 10px)/contain no-repeat;
   transform-origin: bottom center;
   z-index: 2;
 }
 
-/* --- ESPADA (visual) --- */
-#sword, .sword {
-  position: absolute;
-  bottom: 18px;
-  left: -9999px;
-  width: 70px; height: 70px;
-  background: url("img/Espada.png") center/contain no-repeat;
-  opacity: 0;
-  display: block;
-  visibility: visible;
-  pointer-events: none;
-  z-index: 4;
-  transform-origin: 10% 80%;
+/* Espada */
+#sword { position:absolute; bottom:18px; left:-9999px;
+  width:70px; height:70px;
+  background:url("img/Espada.png") center/contain no-repeat;
+  opacity:0; z-index:4; transform-origin:10% 80%;
 }
-#sword.swing-right, .sword.swing-right { animation: swingRight 220ms ease-out forwards; opacity: 1; }
-#sword.swing-left,  .sword.swing-left  { animation: swingLeft  220ms ease-out forwards; opacity: 1; }
-@keyframes swingRight { 0% {transform: rotate(40deg) translateX(-10px);} 100% {transform: rotate(-35deg) translateX(6px);} }
-@keyframes swingLeft  { 0% {transform: scaleX(-1) rotate(40deg) translateX(-10px);} 100% {transform: scaleX(-1) rotate(-35deg) translateX(6px);} }
+#sword.swing-right {animation:swingRight 220ms ease-out forwards; opacity:1;}
+#sword.swing-left  {animation:swingLeft  220ms ease-out forwards; opacity:1;}
+@keyframes swingRight{0%{transform:rotate(40deg);}100%{transform:rotate(-35deg);}}
+@keyframes swingLeft {0%{transform:scaleX(-1) rotate(40deg);}100%{transform:scaleX(-1) rotate(-35deg);}}
 
-/* ✨ Destello */
-#spark {
-  position: absolute;
-  width: 34px; height: 34px;
-  left: -9999px; bottom: 0;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(255,255,120,0.95) 0%, rgba(255,170,0,0.9) 50%, rgba(255,140,0,0.0) 70%);
-  pointer-events: none;
-  z-index: 5;
-  opacity: 0;
-}
-#spark.burst { animation: sparkPop 260ms ease-out forwards; }
-@keyframes sparkPop { 0%{transform:scale(0.6);opacity:0;} 30%{transform:scale(1.2);opacity:1;} 100%{transform:scale(1.6);opacity:0;} }
+/* Spark */
+#spark {position:absolute;width:34px;height:34px;left:-9999px;bottom:0;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,120,0.95)0%,rgba(255,170,0,0.9)50%,rgba(255,140,0,0)70%);
+  z-index:5;opacity:0;}
+#spark.burst{animation:sparkPop 260ms ease-out forwards;}
+@keyframes sparkPop{0%{transform:scale(.6);opacity:0;}30%{transform:scale(1.2);opacity:1;}100%{transform:scale(1.6);opacity:0;}}
 
-/* --- OBSTÁCULO (ROCA) --- */
-#obstacle {
-  position: absolute;
-  bottom: 0;
-  right: -50px;           /* se resetea por JS */
-  width: 50px; height: 50px;
-  background-image: url("img/Roca.png");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: bottom center;
-  z-index: 1;
-}
-@keyframes moveObstacle { from { right: -50px; } to { right: 100%; } }
-#obstacle.disintegrate { animation: rockVanish .28s ease forwards; }
-@keyframes rockVanish {
-  0% { opacity:1; transform:scale(1); filter:blur(0); }
-  70%{ opacity:.35; transform:scale(1.15); filter:blur(2px); }
-  100%{ opacity:0; transform:scale(1.25) translateY(-6px); filter:blur(4px); }
-}
+/* Roca */
+#obstacle {position:absolute;bottom:0;right:-50px;width:50px;height:50px;
+  background:url("img/Roca.png") bottom center/contain no-repeat; z-index:1;}
+@keyframes moveObstacle {from{right:-50px;} to{right:100%;}}
+#obstacle.disintegrate{animation:rockVanish .28s ease forwards;}
+@keyframes rockVanish{0%{opacity:1;}70%{opacity:.35;}100%{opacity:0;transform:translateY(-6px);}}
 
-/* --- CUEVA --- */
-#cave {
-  position: absolute;
-  bottom: 0; right: 0;
-  width: 100px; height: 100px;
-  background: url("img/Cueva.png") bottom center / contain no-repeat;
-  display: none;
-}
+/* Cueva */
+#cave {position:absolute;bottom:0;right:0;width:100px;height:100px;
+  background:url("img/Cueva.png") bottom center/contain no-repeat; display:none;}
 
-/* --- SALTO --- */
-.jump { animation: jump 0.55s ease; }
-@keyframes jump { 0%{bottom:0;} 50%{bottom:120px;} 100%{bottom:0;} }
+/* Salto */
+.jump{animation:jump .55s ease;}
+@keyframes jump{0%{bottom:0;}50%{bottom:120px;}100%{bottom:0;}}
 
 /* Controles móviles */
-.controls {
-  display:flex; gap:12px; justify-content:center; align-items:center;
-  margin: 6px auto 20px;
-}
-.ctrl {
-  width:90px; height:50px; border:2px solid #333; border-radius:10px;
-  background:#fff; font-size:22px; font-weight:700;
-  touch-action: manipulation;
-}
-@media (min-width: 1200px) { .controls { display:none; } }
+.controls{display:flex;gap:12px;justify-content:center;margin:6px auto 20px;}
+.ctrl{width:90px;height:50px;border:2px solid #333;border-radius:10px;background:#fff;font-size:22px;font-weight:700;}
+@media(min-width:1200px){.controls{display:none;}}
