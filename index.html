@@ -17,10 +17,32 @@
     </div>
   </div>
 
+  <!-- Overlay de victoria -->
+  <div id="victoryOverlay" class="overlay">
+    <div class="overlay-box">
+      <h2>🎉 ¡Nivel completado! Llegaste a la cueva 🐻🏠</h2>
+      <div class="overlay-actions">
+        <button id="retryWinBtn" class="btn">Jugar de nuevo</button>
+        <button id="homeWinBtn"  class="btn primary">Inicio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay de derrota -->
+  <div id="gameOverOverlay" class="overlay">
+    <div class="overlay-box">
+      <h2>💀 ¡Te golpeó el enemigo!</h2>
+      <div class="overlay-actions">
+        <button id="retryLoseBtn" class="btn">Reintentar</button>
+        <button id="homeLoseBtn"  class="btn primary">Inicio</button>
+      </div>
+    </div>
+  </div>
+
   <h1>Juego estilo Dinosaurio 🦖</h1>
 
   <div class="game" id="gameArea">
-    <!-- ✨ Capa de cielo para el ciclo día-noche -->
+    <!-- Capa de cielo (día-noche) -->
     <div id="sky" class="sky-tint" aria-hidden="true"></div>
 
     <!-- Personajes/objetos -->
