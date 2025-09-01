@@ -10,6 +10,7 @@ const startScreen    = document.getElementById("startScreen");
 const playBtn        = document.getElementById("playBtn");
 const victoryOverlay = document.getElementById("victoryOverlay");
 const gameOverOverlay= document.getElementById("gameOverOverlay");
+const rotateOverlay  = document.getElementById("rotateOverlay");
 
 const retryWinBtn = document.getElementById("retryWinBtn");
 const homeWinBtn  = document.getElementById("homeWinBtn");
@@ -43,8 +44,14 @@ function fitStage(){
   document.documentElement.style.setProperty('--scale', String(scale));
   if(gameWrapper) gameWrapper.style.height = (BASE_H*scale + 4) + 'px';
 }
-window.addEventListener('resize', fitStage);
-window.addEventListener('orientationchange', fitStage);
+window.addEventListener('resize', ()=>{
+  fitStage();
+  updateOrientationOverlay();
+});
+window.addEventListener('orientationchange', ()=>{
+  fitStage();
+  updateOrientationOverlay();
+});
 document.addEventListener('DOMContentLoaded', fitStage);
 
 /* Estado */
@@ -58,6 +65,17 @@ let jumpBoostVX=0,jumpBoostUntil=0;
 const TARGET_SECONDS=60;
 const TRACK_LENGTH=PLAYER_SPEED*TARGET_SECONDS;
 const RIGHT_FRACTION_WHEN_TRAVELING=0.65;
+
+/* Overlay de orientación controlado por JS */
+function isPortrait(){ return window.matchMedia("(orientation: portrait)").matches; }
+function updateOrientationOverlay(){
+  // Solo bloquea si el juego está corriendo
+  if(running && isPortrait()){
+    rotateOverlay.style.display = 'flex';
+  } else {
+    rotateOverlay.style.display = 'none';
+  }
+}
 
 /* Obstáculos */
 const OB_MIN_DURATION=2.8,OB_MAX_DURATION=3.6,OB_MIN_DELAY=900,OB_MAX_DELAY=1700;
@@ -77,7 +95,6 @@ obstacle.addEventListener("animationend",()=>{ obstacle.style.animation="none"; 
 
 /* Inicio / reinicio */
 playBtn.onclick=async ()=>{
-  // Intento de bloquear a horizontal (solo funciona en algunos navegadores/contextos)
   try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch(_) {}
   startScreen.classList.remove("visible");
   startGame();
@@ -98,6 +115,7 @@ function startGame(){
   sparkEl.style.left="-9999px"; sparkEl.classList.remove("burst");
   scheduleNextObstacle(700);
   fitStage();
+  updateOrientationOverlay(); // ← ahora sí controlado por JS
 }
 
 /* Inputs */
@@ -216,10 +234,12 @@ function doAttack(){
 function onVictory(){
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
   victoryOverlay.classList.add("visible");
+  updateOrientationOverlay(); // ocultar overlay si estaba
 }
 function onGameOver(){
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
   gameOverOverlay.classList.add("visible");
+  updateOrientationOverlay();
 }
 
 /* Roca */
