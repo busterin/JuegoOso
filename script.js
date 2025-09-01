@@ -1,5 +1,5 @@
 const gameWrapper = document.getElementById("gameWrapper");
-const gameArea    = document.getElementById("gameArea"); // .stage
+const gameArea    = document.getElementById("gameArea");
 const player   = document.getElementById("player");
 const swordEl  = document.getElementById("sword");
 const sparkEl  = document.getElementById("spark");
@@ -22,27 +22,20 @@ const btnJump   = document.getElementById("btnJump");
 const btnAttack = document.getElementById("btnAttack");
 
 /* Escalado responsive del escenario 600×200 */
-const BASE_W = 600, BASE_H = 200;
+const BASE_W=600, BASE_H=200;
 function getControlsHeight(){
-  const c = document.querySelector('.controls');
-  if (!c || window.getComputedStyle(c).display === 'none') return 0;
-  return c.getBoundingClientRect().height + 18; // margen de aire inferior
+  const c=document.querySelector('.controls');
+  if(!c || window.getComputedStyle(c).display==='none') return 0;
+  return c.getBoundingClientRect().height + 18;
 }
 function fitStage(){
-  // Ancho máximo (pantalla completa en móvil, tope 1100 en desktop)
   const maxW = Math.min(window.innerWidth, 1100);
   const scaleW = maxW / BASE_W;
-
-  // Alto disponible: toda la ventana menos la barra de controles flotante (si existe)
-  const freeH = window.innerHeight - getControlsHeight() - 16; // un pelín de margen
+  const freeH = window.innerHeight - getControlsHeight() - 16;
   const scaleH = freeH / BASE_H;
-
-  // Elegimos el menor para respetar ambos límites
-  const scale = Math.max(0.6, Math.min(scaleW, scaleH)); // nunca menos de 0.6 para que no enano
-  document.documentElement.style.setProperty('--scale', scale.toString());
-
-  // Ajusta alto del wrapper para que no se solape contenido de abajo
-  if (gameWrapper) gameWrapper.style.height = (BASE_H * scale + 4) + 'px'; // +bordes
+  const scale = Math.max(0.6, Math.min(scaleW, scaleH));
+  document.documentElement.style.setProperty('--scale', String(scale));
+  if(gameWrapper) gameWrapper.style.height = (BASE_H*scale + 4) + 'px';
 }
 window.addEventListener('resize', fitStage);
 window.addEventListener('orientationchange', fitStage);
@@ -66,156 +59,190 @@ let obstacleTimer=null;
 function rand(a,b){return Math.random()*(b-a)+a;}
 function randi(a,b){return Math.floor(rand(a,b));}
 function spawnObstacle(){
- if(!running)return;
- obstacle.classList.remove("disintegrate");
- obstacle.style.opacity="1";obstacle.style.right="-50px";
- const dur=rand(OB_MIN_DURATION,OB_MAX_DURATION).toFixed(2);
- obstacle.style.animation=`moveObstacle ${dur}s linear 1`;
+  if(!running) return;
+  obstacle.classList.remove("disintegrate");
+  obstacle.style.opacity="1";
+  obstacle.style.right="-50px";
+  const dur=rand(OB_MIN_DURATION,OB_MAX_DURATION).toFixed(2);
+  obstacle.style.animation=`moveObstacle ${dur}s linear 1`;
 }
-function scheduleNextObstacle(ms){clearTimeout(obstacleTimer);obstacleTimer=setTimeout(spawnObstacle,ms);}
-obstacle.addEventListener("animationend",()=>{obstacle.style.animation="none";scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));});
+function scheduleNextObstacle(ms){ clearTimeout(obstacleTimer); obstacleTimer=setTimeout(spawnObstacle, ms); }
+obstacle.addEventListener("animationend",()=>{ obstacle.style.animation="none"; scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY)); });
 
-/* Inicio */
-playBtn.onclick=()=>{startScreen.classList.remove("visible");startGame();};
-retryWinBtn.onclick=()=>{victoryOverlay.classList.remove("visible");startGame();};
-homeWinBtn.onclick =()=>{victoryOverlay.classList.remove("visible");startScreen.classList.add("visible");};
-retryLoseBtn.onclick=()=>{gameOverOverlay.classList.remove("visible");startGame();};
-homeLoseBtn.onclick =()=>{gameOverOverlay.classList.remove("visible");startScreen.classList.add("visible");};
+/* Inicio / reinicio */
+playBtn.onclick=()=>{ startScreen.classList.remove("visible"); startGame(); };
+retryWinBtn.onclick=()=>{ victoryOverlay.classList.remove("visible"); startGame(); };
+homeWinBtn.onclick =()=>{ victoryOverlay.classList.remove("visible"); startScreen.classList.add("visible"); };
+retryLoseBtn.onclick=()=>{ gameOverOverlay.classList.remove("visible"); startGame(); };
+homeLoseBtn.onclick =()=>{ gameOverOverlay.classList.remove("visible"); startScreen.classList.add("visible"); };
 
 function startGame(){
- running=true;isJumping=false;gameOverLock=false;
- leftPressed=rightPressed=false;playerX=50;worldX=0;lastMoveDir=1;
- player.style.left=playerX+"px";cave.style.display="none";
- document.documentElement.style.setProperty('--dayCycle',`${TARGET_SECONDS}s`);
- startScreen.classList.remove("visible");victoryOverlay.classList.remove("visible");gameOverOverlay.classList.remove("visible");
- swordEl.style.opacity="0";swordEl.style.left="-9999px";swordEl.classList.remove("swing-right","swing-left");
- sparkEl.style.left="-9999px";sparkEl.classList.remove("burst");
- scheduleNextObstacle(700);
- fitStage();
+  running=true; isJumping=false; gameOverLock=false;
+  leftPressed=rightPressed=false; playerX=50; worldX=0; lastMoveDir=1;
+  player.style.left=playerX+"px"; cave.style.display="none";
+  document.documentElement.style.setProperty('--dayCycle', `${TARGET_SECONDS}s`);
+  startScreen.classList.remove("visible"); victoryOverlay.classList.remove("visible"); gameOverOverlay.classList.remove("visible");
+  swordEl.style.opacity="0"; swordEl.style.left="-9999px"; swordEl.classList.remove("swing-right","swing-left");
+  sparkEl.style.left="-9999px"; sparkEl.classList.remove("burst");
+  player.classList.remove("walk");
+  scheduleNextObstacle(700);
+  fitStage();
 }
 
 /* Inputs */
 document.onkeydown=e=>{
- if(e.code==="Space"){e.preventDefault();if(running&&!isJumping)jump();}
- if(e.code==="ArrowLeft"){leftPressed=true;lastMoveDir=-1;}
- if(e.code==="ArrowRight"){rightPressed=true;lastMoveDir=1;}
- if(e.code==="KeyS"){doAttack();}
- if((e.code==="Enter"||e.code==="Space")&&startScreen.classList.contains("visible")){e.preventDefault();playBtn.click();}
+  if(e.code==="Space"){ e.preventDefault(); if(running&&!isJumping) jump(); }
+  if(e.code==="ArrowLeft"){  leftPressed=true;  lastMoveDir=-1; startWalking(); }
+  if(e.code==="ArrowRight"){ rightPressed=true; lastMoveDir= 1; startWalking(); }
+  if(e.code==="KeyS"){ doAttack(); }
+  if((e.code==="Enter"||e.code==="Space") && startScreen.classList.contains("visible")){ e.preventDefault(); playBtn.click(); }
 };
 document.onkeyup=e=>{
- if(e.code==="ArrowLeft")leftPressed=false;
- if(e.code==="ArrowRight")rightPressed=false;
+  if(e.code==="ArrowLeft"){  leftPressed=false;  if(!rightPressed) stopWalking(); }
+  if(e.code==="ArrowRight"){ rightPressed=false; if(!leftPressed)  stopWalking(); }
 };
 function bindHold(btn,on,off){
- if(!btn)return;
- btn.onmousedown=btn.ontouchstart=e=>{e.preventDefault();on();};
- btn.onmouseup=btn.onmouseleave=btn.ontouchend=btn.ontouchcancel=e=>{e.preventDefault();off();};
+  if(!btn) return;
+  btn.onmousedown = btn.ontouchstart = ev => { ev.preventDefault(); on(); };
+  btn.onmouseup   = btn.onmouseleave = btn.ontouchend = btn.ontouchcancel = ev => { ev.preventDefault(); off(); };
 }
-bindHold(btnLeft, ()=>{leftPressed=true;lastMoveDir=-1;}, ()=>leftPressed=false);
-bindHold(btnRight,()=>{rightPressed=true;lastMoveDir=1;}, ()=>rightPressed=false);
-bindHold(btnJump, ()=>{if(running&&!isJumping)jump();}, ()=>{});
-bindHold(btnAttack,()=>doAttack(),()=>{});
+bindHold(btnLeft,  ()=>{ leftPressed=true;  lastMoveDir=-1; startWalking(); }, ()=>{ leftPressed=false;  if(!rightPressed) stopWalking(); });
+bindHold(btnRight, ()=>{ rightPressed=true; lastMoveDir= 1; startWalking(); }, ()=>{ rightPressed=false; if(!leftPressed)  stopWalking(); });
+bindHold(btnJump,  ()=>{ if(running&&!isJumping) jump(); }, ()=>{});
+bindHold(btnAttack,()=>{ doAttack(); }, ()=>{});
 
 /* Movimiento */
 let lastTime=0;
 function moveLoop(t){
- if(!lastTime)lastTime=t;
- const dt=Math.min((t-lastTime)/1000,0.033);lastTime=t;
- if(running){
-   const rect=gameArea.getBoundingClientRect();
-   let vx=0;if(leftPressed)vx-=PLAYER_SPEED;if(rightPressed)vx+=PLAYER_SPEED;
-   if(performance.now()<jumpBoostUntil)vx+=jumpBoostVX;
-   const nearEnd=worldX>TRACK_LENGTH-rect.width*1.2;
-   const rightLimit=nearEnd?rect.width-PLAYER_WIDTH:rect.width*RIGHT_FRACTION_WHEN_TRAVELING-PLAYER_WIDTH;
-   playerX=Math.max(0,Math.min(rightLimit,playerX+vx*dt));
-   player.style.left=playerX+"px";
-   const boost=(performance.now()<jumpBoostUntil)?(JUMP_FORWARD_VX*lastMoveDir):0;
-   const worldVX=(rightPressed?PLAYER_SPEED:0)+boost-(leftPressed?PLAYER_SPEED:0);
-   worldX=Math.max(0,Math.min(TRACK_LENGTH,worldX+worldVX*dt));
-   // Scroll del tile (se repite infinito)
-   gameArea.style.backgroundPositionX=`${-worldX*0.25}px`;
-   if(worldX>TRACK_LENGTH-rect.width*2)cave.style.display="block";else cave.style.display="none";
-   if(worldX>=TRACK_LENGTH)onVictory();
- }
- requestAnimationFrame(moveLoop);
+  if(!lastTime) lastTime=t;
+  const dt=Math.min((t-lastTime)/1000,0.033);
+  lastTime=t;
+
+  if(running){
+    const rect=gameArea.getBoundingClientRect();
+
+    let vx=0;
+    if(leftPressed)  vx-=PLAYER_SPEED;
+    if(rightPressed) vx+=PLAYER_SPEED;
+    if(performance.now()<jumpBoostUntil) vx+=jumpBoostVX;
+
+    const nearEnd=worldX>TRACK_LENGTH-rect.width*1.2;
+    const rightLimit=nearEnd? (rect.width-PLAYER_WIDTH) : (rect.width*RIGHT_FRACTION_WHEN_TRAVELING-PLAYER_WIDTH);
+
+    playerX=Math.max(0,Math.min(rightLimit,playerX+vx*dt));
+    player.style.left=playerX+"px";
+
+    const boost=(performance.now()<jumpBoostUntil)? (JUMP_FORWARD_VX*lastMoveDir) : 0;
+    const worldVX=(rightPressed?PLAYER_SPEED:0) + boost - (leftPressed?PLAYER_SPEED:0);
+    worldX=Math.max(0,Math.min(TRACK_LENGTH,worldX+worldVX*dt));
+
+    // Parallax del tile
+    gameArea.style.backgroundPositionX = `${-worldX*0.25}px`;
+
+    if(worldX>TRACK_LENGTH-rect.width*2) cave.style.display="block"; else cave.style.display="none";
+    if(worldX>=TRACK_LENGTH) onVictory();
+  }
+  requestAnimationFrame(moveLoop);
 }
 requestAnimationFrame(moveLoop);
 
 /* Salto */
 function jump(){
- isJumping=true;const dir=rightPressed?1:(leftPressed?-1:lastMoveDir);
- lastMoveDir=dir;jumpBoostVX=JUMP_FORWARD_VX*dir;jumpBoostUntil=performance.now()+JUMP_BOOST_TIME;
- player.classList.add("jump");setTimeout(()=>{player.classList.remove("jump");isJumping=false;},550);
+  isJumping=true;
+  const dir = rightPressed ? 1 : (leftPressed ? -1 : lastMoveDir);
+  lastMoveDir=dir;
+  jumpBoostVX=JUMP_FORWARD_VX*dir;
+  jumpBoostUntil=performance.now()+JUMP_BOOST_TIME;
+
+  player.classList.add("jump");
+  setTimeout(()=>{ player.classList.remove("jump"); isJumping=false; }, 550);
 }
+
+/* Caminar (activa/desactiva la animación del sprite sheet) */
+function startWalking(){ player.classList.add("walk"); }
+function stopWalking(){  player.classList.remove("walk"); }
 
 /* Ataque */
 let attackCooldownUntil=0;
 function doAttack(){
- if(!running)return;
- const now=performance.now();if(now<attackCooldownUntil)return;
- attackCooldownUntil=now+220;
- const gameRect=gameArea.getBoundingClientRect();
- const pr=player.getBoundingClientRect();
- const playerLeft=pr.left-gameRect.left,playerRight=pr.right-gameRect.left;
- const x=lastMoveDir>0?(playerRight-12):(playerLeft-58);
- swordEl.style.left=`${x}px`;swordEl.style.bottom="18px";swordEl.style.opacity="1";
- swordEl.classList.remove("swing-right","swing-left");void swordEl.offsetWidth;
- swordEl.classList.add(lastMoveDir>0?"swing-right":"swing-left");
- const hitbox=(lastMoveDir>0)?
-   {left:pr.right,right:pr.right+60,top:pr.bottom-70,bottom:pr.bottom-20}:
-   {left:pr.left-60,right:pr.left,top:pr.bottom-70,bottom:pr.bottom-20};
- const or=obstacle.getBoundingClientRect();
- const hit=!(hitbox.right<or.left||hitbox.left>or.right||hitbox.bottom<or.top||hitbox.top>or.bottom);
- const sparkX=lastMoveDir>0?(playerRight+(hit?20:14)):(playerLeft-(hit?20:14)-34);
- sparkEl.style.left=`${sparkX}px`;sparkEl.style.bottom=hit?"42px":"38px";
- sparkEl.classList.remove("burst");void sparkEl.offsetWidth;sparkEl.classList.add("burst");
- if(hit)destroyRock();
- setTimeout(()=>{swordEl.style.opacity="0";},240);
+  if(!running) return;
+  const now=performance.now();
+  if(now<attackCooldownUntil) return;
+  attackCooldownUntil=now+220;
+
+  const gameRect=gameArea.getBoundingClientRect();
+  const pr=player.getBoundingClientRect();
+  const playerLeft=pr.left-gameRect.left, playerRight=pr.right-gameRect.left;
+
+  // Posición visual de la espada
+  const x = lastMoveDir>0 ? (playerRight-12) : (playerLeft-58);
+  swordEl.style.left = `${x}px`;
+  swordEl.style.bottom = "18px";
+  swordEl.style.opacity = "1";
+  swordEl.classList.remove("swing-right","swing-left");
+  void swordEl.offsetWidth;
+  swordEl.classList.add(lastMoveDir>0 ? "swing-right" : "swing-left");
+
+  // Hitbox virtual
+  const hitbox = (lastMoveDir>0)
+    ? {left:pr.right, right:pr.right+60, top:pr.bottom-70, bottom:pr.bottom-20}
+    : {left:pr.left-60, right:pr.left,   top:pr.bottom-70, bottom:pr.bottom-20};
+
+  const or = obstacle.getBoundingClientRect();
+  const hit = !(hitbox.right<or.left || hitbox.left>or.right || hitbox.bottom<or.top || hitbox.top>or.bottom);
+
+  // Destello
+  const sparkX = lastMoveDir>0 ? (playerRight+(hit?20:14)) : (playerLeft-(hit?20:14)-34);
+  sparkEl.style.left = `${sparkX}px`;
+  sparkEl.style.bottom = hit ? "42px" : "38px";
+  sparkEl.classList.remove("burst"); void sparkEl.offsetWidth; sparkEl.classList.add("burst");
+
+  if(hit) destroyRock();
+
+  setTimeout(()=>{ swordEl.style.opacity="0"; }, 240);
 }
 
-/* Victoria / GameOver */
+/* Victoria / Game Over */
 function onVictory(){
- running=false;clearTimeout(obstacleTimer);
- obstacle.style.animation="none";
- victoryOverlay.classList.add("visible");
+  running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
+  victoryOverlay.classList.add("visible");
 }
 function onGameOver(){
- running=false;clearTimeout(obstacleTimer);
- obstacle.style.animation="none";
- gameOverOverlay.classList.add("visible");
+  running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
+  gameOverOverlay.classList.add("visible");
 }
 
 /* Roca */
 function destroyRock(){
- obstacle.style.animation="none";
- obstacle.classList.add("disintegrate");
- setTimeout(()=>{
-   obstacle.classList.remove("disintegrate");
-   scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));
- },280);
+  obstacle.style.animation="none";
+  obstacle.classList.add("disintegrate");
+  setTimeout(()=>{
+    obstacle.classList.remove("disintegrate");
+    scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));
+  }, 280);
 }
 
 /* Colisiones */
 function isColliding(a,b){
- const ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect();
- return !(ra.right<rb.left||ra.left>rb.right||ra.bottom<rb.top||ra.top>rb.bottom);
+  const ra=a.getBoundingClientRect(), rb=b.getBoundingClientRect();
+  return !(ra.right<rb.left || ra.left>rb.right || ra.bottom<rb.top || ra.top>rb.bottom);
 }
 function isStomp(p,o){
- const rp=p.getBoundingClientRect(),ro=o.getBoundingClientRect();
- return isJumping&&rp.bottom<=ro.top+18&&!(rp.right<ro.left||rp.left>ro.right);
+  const rp=p.getBoundingClientRect(), ro=o.getBoundingClientRect();
+  const verticalOK = rp.bottom <= ro.top + 18;
+  const horizontalOverlap = !(rp.right<ro.left || rp.left>ro.right);
+  return isJumping && verticalOK && horizontalOverlap;
 }
-
 setInterval(()=>{
- if(!running)return;
- if(isColliding(player,obstacle)){
-   if(isStomp(player,obstacle)){
-     destroyRock();
-   } else if(!gameOverLock){
-     gameOverLock=true;running=false;
-     clearTimeout(obstacleTimer);
-     obstacle.style.animation="none";
-     onGameOver();
-     setTimeout(()=>{gameOverLock=false;},300);
-   }
- }
-},100);
+  if(!running) return;
+  if(isColliding(player, obstacle)){
+    if(isStomp(player, obstacle)){
+      destroyRock();
+    } else if(!gameOverLock){
+      gameOverLock=true; running=false;
+      clearTimeout(obstacleTimer); obstacle.style.animation="none";
+      onGameOver();
+      setTimeout(()=>{ gameOverLock=false; }, 300);
+    }
+  }
+}, 100);
