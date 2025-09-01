@@ -23,33 +23,33 @@ const btnRight  = document.getElementById("btnRight");
 const btnJump   = document.getElementById("btnJump");
 const btnAttack = document.getElementById("btnAttack");
 
-/* Parallax opcional (si has añadido capas específicas en el HTML) */
+/* Parallax opcional */
 const parallaxBack   = document.querySelector(".layer-back");
 const parallaxMid    = document.querySelector(".layer-mid");
 const parallaxFront  = document.querySelector(".layer-front");
 const parallaxGround = document.querySelector(".layer-ground");
 
-/* ================== Escenario lógico 600×200 (no escalado) ================== */
+/* ===== Escenario lógico 600×200 ===== */
 const BASE_W = 600, BASE_H = 200;
 let currentScale = 1;
 
-function getControlsHeight() {
-  const c = document.querySelector(".controls");
-  if (!c || window.getComputedStyle(c).display === "none") return 0;
+function getControlsHeight(){
+  const c=document.querySelector(".controls");
+  if(!c || window.getComputedStyle(c).display==="none") return 0;
   return c.getBoundingClientRect().height + 18;
 }
-function fitStage() {
-  const maxW   = Math.min(window.innerWidth, 1100);
+function fitStage(){
+  const maxW = Math.min(window.innerWidth, 1100);
   const scaleW = maxW / BASE_W;
-  const freeH  = window.innerHeight - getControlsHeight() - 16;
+  const freeH = window.innerHeight - getControlsHeight() - 16;
   const scaleH = freeH / BASE_H;
   const scale  = Math.max(0.6, Math.min(scaleW, scaleH));
-  currentScale = scale; // guardar escala actual
+  currentScale = scale;
   document.documentElement.style.setProperty("--scale", String(scale));
-  if (gameWrapper) gameWrapper.style.height = BASE_H * scale + 4 + "px";
+  if(gameWrapper) gameWrapper.style.height = (BASE_H*scale + 4) + "px";
 }
 
-/* ================== Estado del juego ================== */
+/* ===== Estado ===== */
 let running=false,isJumping=false,gameOverLock=false,hasWon=false;
 let leftPressed=false,rightPressed=false;
 let playerX=50,lastMoveDir=1,worldX=0;
@@ -62,7 +62,7 @@ const TARGET_SECONDS=60;
 const TRACK_LENGTH=PLAYER_SPEED*TARGET_SECONDS;
 const RIGHT_FRACTION_WHEN_TRAVELING=0.65;
 
-/* ================== Vidas (panales) ================== */
+/* ===== Vidas (panales) ===== */
 const MAX_LIVES=3;
 let lives=MAX_LIVES;
 let invulnerableUntil=0;
@@ -77,12 +77,9 @@ function renderLives(){
   }
 }
 
-/* ================== Overlay de orientación ================== */
+/* ===== Overlay orientación ===== */
 function isPortrait(){ return window.matchMedia("(orientation: portrait)").matches; }
 function isStartVisible(){ return startScreen.classList.contains("visible"); }
-
-/* En portada (vertical): muestra aviso pero NO bloquea clics.
-   En partida (vertical): muestra aviso y SÍ bloquea hasta girar. */
 function updateOrientationOverlay(){
   const shouldShow = isPortrait() && (running || isStartVisible());
   if(shouldShow){
@@ -93,26 +90,41 @@ function updateOrientationOverlay(){
   }
 }
 
-/* ================== Obstáculos ================== */
+/* ===== Obstáculos (incluye enemigos saltadores 1/3) ===== */
 const OB_MIN_DURATION=2.8,OB_MAX_DURATION=3.6,OB_MIN_DELAY=900,OB_MAX_DELAY=1700;
 let obstacleTimer=null;
 function rand(a,b){return Math.random()*(b-a)+a;}
 function randi(a,b){return Math.floor(rand(a,b));}
+
 function spawnObstacle(){
   if(!running || hasWon) return;
+
   obstacle.classList.remove("disintegrate");
   obstacle.style.opacity="1";
   obstacle.style.right="-50px";
-  const dur=rand(OB_MIN_DURATION,OB_MAX_DURATION).toFixed(2);
-  obstacle.style.animation=`moveObstacle ${dur}s linear 1`;
+  obstacle.style.bottom="0";
+
+  const dur = rand(OB_MIN_DURATION, OB_MAX_DURATION).toFixed(2);
+
+  // 1/3 aprox serán "saltadores" (salto vertical alto)
+  const isJumper = Math.random() < 0.33;
+  if (isJumper) {
+    const jumpDur = rand(0.85, 1.25).toFixed(2); // aleatorio para variedad
+    obstacle.style.animation = `moveObstacle ${dur}s linear 1, jumpEnemy ${jumpDur}s ease-in-out infinite`;
+  } else {
+    obstacle.style.animation = `moveObstacle ${dur}s linear 1`;
+  }
 }
-function scheduleNextObstacle(ms){ clearTimeout(obstacleTimer); obstacleTimer=setTimeout(spawnObstacle, ms); }
-obstacle.addEventListener("animationend",()=>{
+
+/* Solo reagendamos cuando termina moveObstacle (ignora jumpEnemy) */
+obstacle.addEventListener("animationend", (ev)=>{
+  if (ev.animationName !== "moveObstacle") return;
   obstacle.style.animation="none";
   if(!hasWon) scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));
 });
+function scheduleNextObstacle(ms){ clearTimeout(obstacleTimer); obstacleTimer=setTimeout(spawnObstacle, ms); }
 
-/* ================== Inicio / reinicio ================== */
+/* ===== Inicio / reinicio ===== */
 playBtn.onclick=async ()=>{
   try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape"); } catch(_){}
   startScreen.classList.remove("visible");
@@ -144,7 +156,7 @@ function startGame(){
   updateOrientationOverlay();
 }
 
-/* ================== Inputs ================== */
+/* ===== Inputs ===== */
 document.onkeydown=e=>{
   if(e.code==="Space"){ e.preventDefault(); if(running&&!isJumping) jump(); }
   if(e.code==="ArrowLeft"){  leftPressed=true;  lastMoveDir=-1; player.classList.add("flip"); }
@@ -172,7 +184,7 @@ bindHold(btnRight, ()=>{ rightPressed=true; lastMoveDir= 1; player.classList.rem
 bindHold(btnJump,  ()=>{ if(running&&!isJumping) jump(); }, ()=>{});
 bindHold(btnAttack,()=>{ doAttack(); }, ()=>{});
 
-/* ================== Movimiento + fondo ================== */
+/* ===== Movimiento + fondo ===== */
 let lastTime=0;
 function moveLoop(t){
   if(!lastTime) lastTime=t;
@@ -208,25 +220,21 @@ function moveLoop(t){
       moveBG(gameArea, 0.25);
     }
 
-    // Mostrar cueva y reducir riesgos en la recta final
+    // Recta final: mostrar cueva y dejar de generar rocas
     if(worldX > TRACK_LENGTH - visibleW * 2){
       cave.style.display="block";
-      // Detener spawns en los últimos metros
       clearTimeout(obstacleTimer);
     } else {
       cave.style.display="none";
     }
 
-    // Llegada: victoria prioritaria y limpieza de rocas
-    if(worldX>=TRACK_LENGTH){
-      onVictory();
-    }
+    if(worldX>=TRACK_LENGTH) onVictory();
   }
   requestAnimationFrame(moveLoop);
 }
 requestAnimationFrame(moveLoop);
 
-/* ================== Salto ================== */
+/* ===== Salto del oso ===== */
 function jump(){
   isJumping=true;
   const dir = rightPressed ? 1 : (leftPressed ? -1 : lastMoveDir);
@@ -238,7 +246,7 @@ function jump(){
   setTimeout(()=>{ player.classList.remove("jump"); isJumping=false; }, 550);
 }
 
-/* ================== Ataque (corregido para escala) ================== */
+/* ===== Ataque (corregido para escala) ===== */
 let attackCooldownUntil=0;
 function doAttack(){
   if(!running || hasWon) return;
@@ -246,7 +254,6 @@ function doAttack(){
   if(now<attackCooldownUntil) return;
   attackCooldownUntil=now+220;
 
-  // offsets = coordenadas lógicas (no afectadas por escala)
   const pLeft  = player.offsetLeft;
   const pRight = pLeft + player.offsetWidth;
 
@@ -258,7 +265,6 @@ function doAttack(){
   void swordEl.offsetWidth;
   swordEl.classList.add(lastMoveDir>0 ? "swing-right" : "swing-left");
 
-  // Colisión en coordenadas de pantalla (rects)
   const pr = player.getBoundingClientRect();
   const or = obstacle.getBoundingClientRect();
   const hitbox = (lastMoveDir>0)
@@ -266,7 +272,6 @@ function doAttack(){
     : {left:pr.left-60,   right:pr.left,     top:pr.bottom-70, bottom:pr.bottom-20};
   const hit = !(hitbox.right<or.left || hitbox.left>or.right || hitbox.bottom<or.top || hitbox.top>or.bottom);
 
-  // Destello (usar offsets)
   const sparkX = lastMoveDir>0 ? (pRight+(hit?20:14)) : (pLeft-(hit?20:14)-34);
   sparkEl.style.left   = `${sparkX}px`;
   sparkEl.style.bottom = hit ? "42px" : "38px";
@@ -277,25 +282,25 @@ function doAttack(){
   setTimeout(()=>{ swordEl.style.opacity="0"; }, 240);
 }
 
-/* ================== Victoria / Game Over ================== */
+/* ===== Victoria / Game Over ===== */
 function onVictory(){
-  if(hasWon) return;      // evitar dobles llamadas
+  if(hasWon) return;
   hasWon = true;
   running=false;
   clearTimeout(obstacleTimer);
   obstacle.style.animation="none";
-  obstacle.style.opacity="0";     // ocultar la roca por si estaba presente
+  obstacle.style.opacity="0";
   victoryOverlay.classList.add("visible");
   updateOrientationOverlay();
 }
 function onGameOver(){
-  if(hasWon) return;      // si ya ganaste, no puedes perder
+  if(hasWon) return;
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
   gameOverOverlay.classList.add("visible");
   updateOrientationOverlay();
 }
 
-/* ================== Roca ================== */
+/* ===== Roca ===== */
 function destroyRock(){
   obstacle.style.animation="none";
   obstacle.classList.add("disintegrate");
@@ -312,7 +317,7 @@ function resetRockAfterHit(){
   if(!hasWon) scheduleNextObstacle(900);
 }
 
-/* ================== Colisiones ================== */
+/* ===== Colisiones ===== */
 function isColliding(a,b){
   const ra=a.getBoundingClientRect(), rb=b.getBoundingClientRect();
   return !(ra.right<rb.left || ra.left>rb.right || ra.bottom<rb.top || ra.top>rb.bottom);
@@ -324,15 +329,14 @@ function isStomp(p,o){
   return isJumping && verticalOK && horizontalOverlap;
 }
 
-/* ====== Listeners globales y bucle de colisiones ====== */
+/* ===== Listeners globales y colisiones ===== */
 window.addEventListener("resize", ()=>{ fitStage(); updateOrientationOverlay(); });
 window.addEventListener("orientationchange", ()=>{ fitStage(); updateOrientationOverlay(); });
 document.addEventListener("DOMContentLoaded", ()=>{
   fitStage();
-  updateOrientationOverlay(); // mostrar aviso en portada si está en vertical
+  updateOrientationOverlay();
 });
 
-/* Detección de colisiones (se ignoran si hasWon=true) */
 setInterval(()=>{
   if(!running || hasWon) return;
 
@@ -345,11 +349,9 @@ setInterval(()=>{
     const now=performance.now();
     if(now < invulnerableUntil) return;
 
-    // Perder vida
     lives = Math.max(0, lives - 1);
     renderLives();
 
-    // Feedback de daño e invulnerabilidad breve
     player.classList.add("hurt");
     invulnerableUntil = now + 800;
     setTimeout(()=> player.classList.remove("hurt"), 650);
