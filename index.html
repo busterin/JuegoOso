@@ -43,8 +43,16 @@
   <div class="game" id="gameWrapper">
     <!-- Escenario base 600×200 que se escala -->
     <div class="stage" id="gameArea">
+
+      <!-- 🔵 Parallax por capas (todas pegadas al suelo/bottom) -->
+      <div class="layer back"  aria-hidden="true"></div>
+      <div class="layer mid"   aria-hidden="true"></div>
+      <div class="layer front" aria-hidden="true"></div>
+
+      <!-- Capa de cielo (día-noche) -->
       <div id="sky" class="sky-tint" aria-hidden="true"></div>
 
+      <!-- Entidades -->
       <div id="player"></div>
       <div id="sword" class="sword" aria-hidden="true"></div>
       <div id="spark" aria-hidden="true"></div>
