@@ -3,16 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Juego Oso</title>
+  <title>OSO'S ADVENTURE</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <!-- Pantalla de inicio -->
-  <div id="startScreen" class="overlay visible">
-    <div class="overlay-box">
-      <h1>Juego del Oso 🐻</h1>
-      <p>Mover: ← → · Saltar: ESPACIO · Atacar: S</p>
-      <p>En móvil: botones de abajo</p>
+  <!-- Pantalla de inicio (portada a pantalla completa) -->
+  <div id="startScreen" class="overlay visible portada">
+    <div class="overlay-box portada-box">
       <button id="playBtn" class="btn primary">JUGAR</button>
     </div>
   </div>
@@ -39,20 +36,11 @@
     </div>
   </div>
 
-  <!-- Contenedor responsive -->
+  <!-- Contenedor del juego -->
   <div class="game" id="gameWrapper">
-    <!-- Escenario base 600×200 que se escala -->
     <div class="stage" id="gameArea">
-
-      <!-- 🔵 Parallax por capas (todas pegadas al suelo/bottom) -->
-      <div class="layer back"  aria-hidden="true"></div>
-      <div class="layer mid"   aria-hidden="true"></div>
-      <div class="layer front" aria-hidden="true"></div>
-
-      <!-- Capa de cielo (día-noche) -->
       <div id="sky" class="sky-tint" aria-hidden="true"></div>
 
-      <!-- Entidades -->
       <div id="player"></div>
       <div id="sword" class="sword" aria-hidden="true"></div>
       <div id="spark" aria-hidden="true"></div>
@@ -70,5 +58,24 @@
   </div>
 
   <script src="script.js"></script>
+  <script>
+    // Asegura que los botones "Inicio" vuelven a la portada
+    document.addEventListener("DOMContentLoaded", ()=>{
+      const homeWinBtn  = document.getElementById("homeWinBtn");
+      const homeLoseBtn = document.getElementById("homeLoseBtn");
+      const startScreen = document.getElementById("startScreen");
+      const victoryOverlay = document.getElementById("victoryOverlay");
+      const gameOverOverlay= document.getElementById("gameOverOverlay");
+
+      homeWinBtn.addEventListener("click", ()=>{
+        victoryOverlay.classList.remove("visible");
+        startScreen.classList.add("visible");
+      });
+      homeLoseBtn.addEventListener("click", ()=>{
+        gameOverOverlay.classList.remove("visible");
+        startScreen.classList.add("visible");
+      });
+    });
+  </script>
 </body>
 </html>
