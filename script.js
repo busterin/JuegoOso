@@ -1,5 +1,6 @@
 const gameWrapper = document.getElementById("gameWrapper");
 const gameArea    = document.getElementById("gameArea");
+const hud         = document.getElementById("hud");
 const player   = document.getElementById("player");
 const swordEl  = document.getElementById("sword");
 const sparkEl  = document.getElementById("spark");
@@ -22,7 +23,7 @@ const btnRight  = document.getElementById("btnRight");
 const btnJump   = document.getElementById("btnJump");
 const btnAttack = document.getElementById("btnAttack");
 
-/* (Opcional) Capas de parallax si las añades en el HTML */
+/* Parallax opcional (si existen capas dedicadas) */
 const parallaxBack  = document.querySelector(".layer-back");
 const parallaxMid   = document.querySelector(".layer-mid");
 const parallaxFront = document.querySelector(".layer-front");
@@ -44,14 +45,8 @@ function fitStage(){
   document.documentElement.style.setProperty('--scale', String(scale));
   if(gameWrapper) gameWrapper.style.height = (BASE_H*scale + 4) + 'px';
 }
-window.addEventListener('resize', ()=>{
-  fitStage();
-  updateOrientationOverlay();
-});
-window.addEventListener('orientationchange', ()=>{
-  fitStage();
-  updateOrientationOverlay();
-});
+window.addEventListener('resize', ()=>{ fitStage(); updateOrientationOverlay(); });
+window.addEventListener('orientationchange', ()=>{ fitStage(); updateOrientationOverlay(); });
 document.addEventListener('DOMContentLoaded', fitStage);
 
 /* Estado */
@@ -66,10 +61,24 @@ const TARGET_SECONDS=60;
 const TRACK_LENGTH=PLAYER_SPEED*TARGET_SECONDS;
 const RIGHT_FRACTION_WHEN_TRAVELING=0.65;
 
-/* Overlay de orientación controlado por JS */
+/* ===== Vidas (panales) ===== */
+const MAX_LIVES=3;
+let lives=MAX_LIVES;
+let invulnerableUntil=0;
+
+function renderLives(){
+  if(!hud) return;
+  hud.innerHTML="";
+  for(let i=0;i<lives;i++){
+    const el=document.createElement('div');
+    el.className="honey";
+    hud.appendChild(el);
+  }
+}
+
+/* Overlay de orientación (bloquea solo si el juego está corriendo) */
 function isPortrait(){ return window.matchMedia("(orientation: portrait)").matches; }
 function updateOrientationOverlay(){
-  // Solo bloquea si el juego está corriendo
   if(running && isPortrait()){
     rotateOverlay.style.display = 'flex';
   } else {
@@ -107,15 +116,18 @@ homeLoseBtn.onclick =()=>{ gameOverOverlay.classList.remove("visible"); startScr
 function startGame(){
   running=true; isJumping=false; gameOverLock=false;
   leftPressed=rightPressed=false; playerX=50; worldX=0; lastMoveDir=1;
+
+  lives=MAX_LIVES; invulnerableUntil=0; renderLives();
+
   player.style.left=playerX+"px"; cave.style.display="none";
-  player.classList.remove("flip"); // empieza mirando a la derecha
+  player.classList.remove("flip","hurt");
   document.documentElement.style.setProperty('--dayCycle', `${TARGET_SECONDS}s`);
   victoryOverlay.classList.remove("visible"); gameOverOverlay.classList.remove("visible");
   swordEl.style.opacity="0"; swordEl.style.left="-9999px"; swordEl.classList.remove("swing-right","swing-left");
   sparkEl.style.left="-9999px"; sparkEl.classList.remove("burst");
   scheduleNextObstacle(700);
   fitStage();
-  updateOrientationOverlay(); // ← ahora sí controlado por JS
+  updateOrientationOverlay();
 }
 
 /* Inputs */
@@ -234,7 +246,7 @@ function doAttack(){
 function onVictory(){
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
   victoryOverlay.classList.add("visible");
-  updateOrientationOverlay(); // ocultar overlay si estaba
+  updateOrientationOverlay();
 }
 function onGameOver(){
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
@@ -251,6 +263,13 @@ function destroyRock(){
     scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));
   }, 280);
 }
+function resetRockAfterHit(){
+  obstacle.style.animation="none";
+  obstacle.classList.remove("disintegrate");
+  obstacle.style.opacity="1";
+  obstacle.style.right="-50px";
+  scheduleNextObstacle(900);
+}
 
 /* Colisiones */
 function isColliding(a,b){
@@ -263,16 +282,37 @@ function isStomp(p,o){
   const horizontalOverlap = !(rp.right<ro.left || rp.left>ro.right);
   return isJumping && verticalOK && horizontalOverlap;
 }
+
+/* Bucle de colisiones con sistema de vidas */
 setInterval(()=>{
   if(!running) return;
+
   if(isColliding(player, obstacle)){
     if(isStomp(player, obstacle)){
       destroyRock();
-    } else if(!gameOverLock){
-      gameOverLock=true; running=false;
-      clearTimeout(obstacleTimer); obstacle.style.animation="none";
+      return;
+    }
+
+    const now=performance.now();
+    if(now < invulnerableUntil) return; // invulnerable tras golpe
+
+    // Perder una vida
+    lives = Math.max(0, lives - 1);
+    renderLives();
+
+    // Feedback de daño e invulnerabilidad breve
+    player.classList.add("hurt");
+    invulnerableUntil = now + 800;
+    setTimeout(()=> player.classList.remove("hurt"), 650);
+
+    if(lives <= 0){
+      running=false;
+      clearTimeout(obstacleTimer);
+      obstacle.style.animation="none";
       onGameOver();
-      setTimeout(()=>{ gameOverLock=false; }, 300);
+    } else {
+      // Reiniciar roca y continuar
+      resetRockAfterHit();
     }
   }
-}, 100);
+}, 90);
