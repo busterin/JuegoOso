@@ -23,13 +23,13 @@ const btnRight  = document.getElementById("btnRight");
 const btnJump   = document.getElementById("btnJump");
 const btnAttack = document.getElementById("btnAttack");
 
-/* Parallax opcional */
+/* Parallax opcional (si has añadido capas específicas en el HTML) */
 const parallaxBack   = document.querySelector(".layer-back");
 const parallaxMid    = document.querySelector(".layer-mid");
 const parallaxFront  = document.querySelector(".layer-front");
 const parallaxGround = document.querySelector(".layer-ground");
 
-/* ===== Escenario lógico 600×200 (no escalado) ===== */
+/* ================== Escenario lógico 600×200 (no escalado) ================== */
 const BASE_W = 600, BASE_H = 200;
 let currentScale = 1;
 
@@ -48,11 +48,8 @@ function fitStage() {
   document.documentElement.style.setProperty("--scale", String(scale));
   if (gameWrapper) gameWrapper.style.height = BASE_H * scale + 4 + "px";
 }
-window.addEventListener("resize", () => { fitStage(); updateOrientationOverlay(); });
-window.addEventListener("orientationchange", () => { fitStage(); updateOrientationOverlay(); });
-document.addEventListener("DOMContentLoaded", fitStage);
 
-/* ===== Estado ===== */
+/* ================== Estado del juego ================== */
 let running=false,isJumping=false,gameOverLock=false;
 let leftPressed=false,rightPressed=false;
 let playerX=50,lastMoveDir=1,worldX=0;
@@ -65,7 +62,7 @@ const TARGET_SECONDS=60;
 const TRACK_LENGTH=PLAYER_SPEED*TARGET_SECONDS;
 const RIGHT_FRACTION_WHEN_TRAVELING=0.65;
 
-/* ===== Vidas (panales) ===== */
+/* ================== Vidas (panales) ================== */
 const MAX_LIVES=3;
 let lives=MAX_LIVES;
 let invulnerableUntil=0;
@@ -80,14 +77,23 @@ function renderLives(){
   }
 }
 
-/* ===== Overlay orientación (solo en partida) ===== */
+/* ================== Overlay de orientación ================== */
 function isPortrait(){ return window.matchMedia("(orientation: portrait)").matches; }
+function isStartVisible(){ return startScreen.classList.contains("visible"); }
+
+/* En portada (vertical): muestra aviso pero NO bloquea clics.
+   En partida (vertical): muestra aviso y SÍ bloquea hasta girar. */
 function updateOrientationOverlay(){
-  if(running && isPortrait()) rotateOverlay.style.display="flex";
-  else rotateOverlay.style.display="none";
+  const shouldShow = isPortrait() && (running || isStartVisible());
+  if(shouldShow){
+    rotateOverlay.style.display = "flex";
+    rotateOverlay.style.pointerEvents = running ? "auto" : "none";
+  } else {
+    rotateOverlay.style.display = "none";
+  }
 }
 
-/* ===== Obstáculos ===== */
+/* ================== Obstáculos ================== */
 const OB_MIN_DURATION=2.8,OB_MAX_DURATION=3.6,OB_MIN_DELAY=900,OB_MAX_DELAY=1700;
 let obstacleTimer=null;
 function rand(a,b){return Math.random()*(b-a)+a;}
@@ -106,7 +112,7 @@ obstacle.addEventListener("animationend",()=>{
   scheduleNextObstacle(randi(OB_MIN_DELAY,OB_MAX_DELAY));
 });
 
-/* ===== Inicio / reinicio ===== */
+/* ================== Inicio / reinicio ================== */
 playBtn.onclick=async ()=>{
   try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape"); } catch(_){}
   startScreen.classList.remove("visible");
@@ -125,16 +131,20 @@ function startGame(){
 
   player.style.left=playerX+"px"; cave.style.display="none";
   player.classList.remove("flip","hurt");
+
   document.documentElement.style.setProperty("--dayCycle", `${TARGET_SECONDS}s`);
-  victoryOverlay.classList.remove("visible"); gameOverOverlay.classList.remove("visible");
+  victoryOverlay.classList.remove("visible");
+  gameOverOverlay.classList.remove("visible");
+
   swordEl.style.opacity="0"; swordEl.style.left="-9999px"; swordEl.classList.remove("swing-right","swing-left");
   sparkEl.style.left="-9999px"; sparkEl.classList.remove("burst");
+
   scheduleNextObstacle(700);
   fitStage();
   updateOrientationOverlay();
 }
 
-/* ===== Inputs ===== */
+/* ================== Inputs ================== */
 document.onkeydown=e=>{
   if(e.code==="Space"){ e.preventDefault(); if(running&&!isJumping) jump(); }
   if(e.code==="ArrowLeft"){  leftPressed=true;  lastMoveDir=-1; player.classList.add("flip"); }
@@ -162,7 +172,7 @@ bindHold(btnRight, ()=>{ rightPressed=true; lastMoveDir= 1; player.classList.rem
 bindHold(btnJump,  ()=>{ if(running&&!isJumping) jump(); }, ()=>{});
 bindHold(btnAttack,()=>{ doAttack(); }, ()=>{});
 
-/* ===== Movimiento + fondo ===== */
+/* ================== Movimiento + fondo ================== */
 let lastTime=0;
 function moveLoop(t){
   if(!lastTime) lastTime=t;
@@ -170,7 +180,7 @@ function moveLoop(t){
   lastTime=t;
 
   if(running){
-    // ⚠️ Usamos SIEMPRE el ancho lógico (BASE_W), no el escalado.
+    // Usamos SIEMPRE el ancho lógico del escenario
     const visibleW = BASE_W;
 
     let vx=0;
@@ -208,7 +218,7 @@ function moveLoop(t){
 }
 requestAnimationFrame(moveLoop);
 
-/* ===== Salto ===== */
+/* ================== Salto ================== */
 function jump(){
   isJumping=true;
   const dir = rightPressed ? 1 : (leftPressed ? -1 : lastMoveDir);
@@ -220,7 +230,7 @@ function jump(){
   setTimeout(()=>{ player.classList.remove("jump"); isJumping=false; }, 550);
 }
 
-/* ===== Ataque (corregido para escala) ===== */
+/* ================== Ataque (corregido para escala) ================== */
 let attackCooldownUntil=0;
 function doAttack(){
   if(!running) return;
@@ -259,7 +269,7 @@ function doAttack(){
   setTimeout(()=>{ swordEl.style.opacity="0"; }, 240);
 }
 
-/* ===== Victoria / Game Over ===== */
+/* ================== Victoria / Game Over ================== */
 function onVictory(){
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
   victoryOverlay.classList.add("visible");
@@ -271,7 +281,7 @@ function onGameOver(){
   updateOrientationOverlay();
 }
 
-/* ===== Roca ===== */
+/* ================== Roca ================== */
 function destroyRock(){
   obstacle.style.animation="none";
   obstacle.classList.add("disintegrate");
@@ -288,7 +298,7 @@ function resetRockAfterHit(){
   scheduleNextObstacle(900);
 }
 
-/* ===== Colisiones ===== */
+/* ================== Colisiones ================== */
 function isColliding(a,b){
   const ra=a.getBoundingClientRect(), rb=b.getBoundingClientRect();
   return !(ra.right<rb.left || ra.left>rb.right || ra.bottom<rb.top || ra.top>rb.bottom);
@@ -300,7 +310,14 @@ function isStomp(p,o){
   return isJumping && verticalOK && horizontalOverlap;
 }
 
-/* Bucle colisiones (con vidas) */
+/* ====== Listeners globales y bucle de colisiones ====== */
+window.addEventListener("resize", ()=>{ fitStage(); updateOrientationOverlay(); });
+window.addEventListener("orientationchange", ()=>{ fitStage(); updateOrientationOverlay(); });
+document.addEventListener("DOMContentLoaded", ()=>{
+  fitStage();
+  updateOrientationOverlay(); // mostrar aviso en portada si está en vertical
+});
+
 setInterval(()=>{
   if(!running) return;
 
@@ -313,9 +330,11 @@ setInterval(()=>{
     const now=performance.now();
     if(now < invulnerableUntil) return;
 
+    // Perder vida
     lives = Math.max(0, lives - 1);
     renderLives();
 
+    // Feedback de daño e invulnerabilidad breve
     player.classList.add("hurt");
     invulnerableUntil = now + 800;
     setTimeout(()=> player.classList.remove("hurt"), 650);
