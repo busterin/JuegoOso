@@ -57,25 +57,14 @@
     <button id="btnAttack" class="ctrl">🗡️</button>
   </div>
 
-  <script src="script.js"></script>
-  <script>
-    // Asegura que los botones "Inicio" vuelven a la portada
-    document.addEventListener("DOMContentLoaded", ()=>{
-      const homeWinBtn  = document.getElementById("homeWinBtn");
-      const homeLoseBtn = document.getElementById("homeLoseBtn");
-      const startScreen = document.getElementById("startScreen");
-      const victoryOverlay = document.getElementById("victoryOverlay");
-      const gameOverOverlay= document.getElementById("gameOverOverlay");
+  <!-- Overlay de orientación (bloquea en vertical) -->
+  <div id="rotateOverlay" class="rotate-overlay">
+    <div class="rotate-box">
+      <p><strong>Gira el móvil</strong> para jugar en horizontal</p>
+      <div style="font-size:42px; line-height:1.2;">📱↻</div>
+    </div>
+  </div>
 
-      homeWinBtn.addEventListener("click", ()=>{
-        victoryOverlay.classList.remove("visible");
-        startScreen.classList.add("visible");
-      });
-      homeLoseBtn.addEventListener("click", ()=>{
-        gameOverOverlay.classList.remove("visible");
-        startScreen.classList.add("visible");
-      });
-    });
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
