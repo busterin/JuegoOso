@@ -45,6 +45,20 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
   transform: scale(var(--scale)); transform-origin: top center;
 }
 
+/* HUD (vidas) */
+.hud {
+  position: absolute; top: 6px; left: 6px; z-index: 5;
+  display: flex; gap: 6px; align-items: center;
+  padding: 4px 6px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid #333; border-radius: 8px;
+}
+.honey {
+  width: 22px; height: 22px;
+  background: url("img/Panal.png") center/contain no-repeat;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,0.3));
+}
+
 /* Cielo día-noche */
 .sky-tint {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
@@ -63,9 +77,14 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
   width: 80px; height: 80px;
   background:url("img/Oso.png") center bottom/contain no-repeat;
   transform-origin: bottom center; z-index: 2;
-  transition: transform 0.1s linear;
+  transition: transform 0.1s linear, opacity .12s linear;
 }
 #player.flip { transform: scaleX(-1); }
+#player.hurt { animation: hurtBlink .6s ease-in-out; }
+@keyframes hurtBlink {
+  0%,100%{opacity:1;}
+  20%,40%,60%,80%{opacity:.2;}
+}
 
 /* Espada */
 #sword { position:absolute; bottom:18px; left:-9999px;
@@ -114,9 +133,9 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 }
 @media (min-width: 1200px){.controls{display:none;}}
 
-/* ===== Overlay de orientación (controlado por JS) ===== */
+/* Overlay de orientación (controlado por JS) */
 .rotate-overlay{
-  position: fixed; inset:0; display:none; /* ← ya NO se muestra por media query */
+  position: fixed; inset:0; display:none;
   align-items:center; justify-content:center;
   background: rgba(0,0,0,.75); color:#fff; z-index: 3000; text-align:center;
 }
