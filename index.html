@@ -7,9 +7,11 @@
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <!-- Pantalla de inicio (portada a pantalla completa, solo botón JUGAR) -->
+  <!-- Pantalla de inicio (portada a pantalla completa, botón centrado) -->
   <div id="startScreen" class="overlay visible portada">
-    <button id="playBtn" class="btn primary portada-btn">JUGAR</button>
+    <div class="overlay-box portada-box">
+      <button id="playBtn" class="btn primary">JUGAR</button>
+    </div>
   </div>
 
   <!-- Overlay de victoria -->
@@ -37,6 +39,9 @@
   <!-- Contenedor del juego -->
   <div class="game" id="gameWrapper">
     <div class="stage" id="gameArea">
+      <!-- HUD vidas -->
+      <div id="hud" class="hud" aria-label="Vidas restantes"></div>
+
       <div id="sky" class="sky-tint" aria-hidden="true"></div>
 
       <div id="player"></div>
