@@ -1,11 +1,7 @@
 /* Base */
 * { box-sizing: border-box; }
 :root { --dayCycle: 60s; --scale: 1; }
-body {
-  font-family: Arial, sans-serif;
-  background: #f0f0f0;
-  margin: 0;
-}
+body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 
 /* Overlays genéricos */
 .overlay {
@@ -34,28 +30,11 @@ body {
 .portada {
   background: url("img/Portada.PNG") center/cover no-repeat;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;  /* título arriba, botón abajo */
+  justify-content: flex-end;  /* botón al fondo */
   align-items: center;
-  padding: 6% 5% 10%;
-  text-align: center;
-}
-.portada-title {
-  font-family: "Luckiest Guy", system-ui, Arial, sans-serif;
-  font-size: clamp(36px, 8vw, 96px);
-  font-weight: 400;
-  letter-spacing: 2px;
-  color: #fff;
-  margin: 0;
-  text-shadow:
-    -3px -3px 0 #000,
-     3px -3px 0 #000,
-    -3px  3px 0 #000,
-     3px  3px 0 #000,
-     0    0   14px rgba(0,0,0,0.7);
+  padding-bottom: 12%;        /* ajusta distancia desde abajo */
 }
 .portada-btn {
-  margin-bottom: 4%;
   font-size: clamp(22px, 3.5vw, 32px);
   padding: 18px 40px;
   background: #2ecc71;
@@ -104,8 +83,8 @@ body {
 }
 #sword.swing-right {animation:swingRight 220ms ease-out forwards; opacity:1;}
 #sword.swing-left  {animation:swingLeft  220ms ease-out forwards; opacity:1;}
-@keyframes swingRight{0%{transform:rotate(40deg);}100%{transform:rotate(-35deg);}}
-@keyframes swingLeft {0%{transform:scaleX(-1) rotate(40deg);}100%{transform:scaleX(-1) rotate(-35deg);}}
+@keyframes swingRight{0%{transform:rotate(40deg);}100%{transform:rotate(-35deg);} }
+@keyframes swingLeft {0%{transform:scaleX(-1) rotate(40deg);}100%{transform:scaleX(-1) rotate(-35deg);} }
 
 /* Destello */
 #spark {position:absolute;width:34px;height:34px;left:-9999px;bottom:0;border-radius:50%;
@@ -144,7 +123,7 @@ body {
 }
 @media (min-width: 1200px){.controls{display:none;}}
 
-/* Overlay de orientación (bloquea el juego en vertical) */
+/* Overlay de orientación */
 .rotate-overlay{
   position: fixed; inset:0; display:none; align-items:center; justify-content:center;
   background: rgba(0,0,0,.75); color:#fff; z-index: 3000; text-align:center;
