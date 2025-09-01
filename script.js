@@ -21,6 +21,12 @@ const btnRight  = document.getElementById("btnRight");
 const btnJump   = document.getElementById("btnJump");
 const btnAttack = document.getElementById("btnAttack");
 
+/* (Opcional) Capas de parallax: si existen, las usamos; si no, ignoramos sin romper nada */
+const parallaxBack  = document.querySelector(".layer-back");
+const parallaxMid   = document.querySelector(".layer-mid");
+const parallaxFront = document.querySelector(".layer-front");
+const parallaxGround= document.querySelector(".layer-ground");
+
 /* Escalado responsive del escenario 600×200 */
 const BASE_W=600, BASE_H=200;
 function getControlsHeight(){
@@ -53,7 +59,7 @@ const TARGET_SECONDS=60;
 const TRACK_LENGTH=PLAYER_SPEED*TARGET_SECONDS;
 const RIGHT_FRACTION_WHEN_TRAVELING=0.65;
 
-/* Obstáculos */
+/* Obstáculos (más moderados) */
 const OB_MIN_DURATION=2.8,OB_MAX_DURATION=3.6,OB_MIN_DELAY=900,OB_MAX_DELAY=1700;
 let obstacleTimer=null;
 function rand(a,b){return Math.random()*(b-a)+a;}
@@ -80,7 +86,7 @@ function startGame(){
   running=true; isJumping=false; gameOverLock=false;
   leftPressed=rightPressed=false; playerX=50; worldX=0; lastMoveDir=1;
   player.style.left=playerX+"px"; cave.style.display="none";
-  player.classList.remove("flip"); // mira a la derecha al empezar
+  player.classList.remove("flip"); // empieza mirando a la derecha
   document.documentElement.style.setProperty('--dayCycle', `${TARGET_SECONDS}s`);
   startScreen.classList.remove("visible"); victoryOverlay.classList.remove("visible"); gameOverOverlay.classList.remove("visible");
   swordEl.style.opacity="0"; swordEl.style.left="-9999px"; swordEl.classList.remove("swing-right","swing-left");
@@ -111,7 +117,7 @@ bindHold(btnRight, ()=>{ rightPressed=true; lastMoveDir= 1; player.classList.rem
 bindHold(btnJump,  ()=>{ if(running&&!isJumping) jump(); }, ()=>{});
 bindHold(btnAttack,()=>{ doAttack(); }, ()=>{});
 
-/* Movimiento */
+/* Movimiento + Parallax */
 let lastTime=0;
 function moveLoop(t){
   if(!lastTime) lastTime=t;
@@ -136,8 +142,17 @@ function moveLoop(t){
     const worldVX=(rightPressed?PLAYER_SPEED:0) + boost - (leftPressed?PLAYER_SPEED:0);
     worldX=Math.max(0,Math.min(TRACK_LENGTH,worldX+worldVX*dt));
 
-    // Fondo desplazable
-    gameArea.style.backgroundPositionX = `${-worldX*0.25}px`;
+    /* Parallax: mueve capas si existen; si no, mueve el fondo del gameArea como antes */
+    const moveBG = (el, factor) => { if(el) el.style.backgroundPositionX = `${-(worldX*factor)}px`; };
+    // Capas (si están definidas en tu HTML/CSS):
+    moveBG(parallaxBack,   0.08);  // más lejano (montañas)
+    moveBG(parallaxMid,    0.18);  // bosque medio
+    moveBG(parallaxFront,  0.28);  // árboles cercanos
+    moveBG(parallaxGround, 0.38);  // suelo
+    // Fallback al fondo base si no hay capas:
+    if(!parallaxBack && !parallaxMid && !parallaxFront && !parallaxGround){
+      moveBG(gameArea, 0.25);
+    }
 
     if(worldX>TRACK_LENGTH-rect.width*2) cave.style.display="block"; else cave.style.display="none";
     if(worldX>=TRACK_LENGTH) onVictory();
@@ -146,7 +161,7 @@ function moveLoop(t){
 }
 requestAnimationFrame(moveLoop);
 
-/* Salto */
+/* Salto (siempre desde el suelo visual, sin tocar bottom) */
 function jump(){
   isJumping=true;
   const dir = rightPressed ? 1 : (leftPressed ? -1 : lastMoveDir);
