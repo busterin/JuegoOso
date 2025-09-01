@@ -96,6 +96,9 @@ const TARGET_SECONDS=60;
 const TRACK_LENGTH=PLAYER_SPEED*TARGET_SECONDS;
 const RIGHT_FRACTION_WHEN_TRAVELING=0.65;
 
+/* 🔒 Colchón de meta para evitar game over al final */
+const FINISH_BUFFER = 80; // px antes de la meta
+
 /* ===== Vidas ===== */
 const MAX_LIVES=3;
 let lives=MAX_LIVES;
@@ -182,7 +185,7 @@ function startGame(){
   scheduleNextObstacle(700);
   fitStage();
   updateOrientationOverlay();
-  musicStart(); // 🎵 arranca música
+  musicStart();
 }
 
 /* ===== Inputs ===== */
@@ -249,13 +252,21 @@ function moveLoop(t){
       moveBG(gameArea, 0.25);
     }
 
-    if(worldX > TRACK_LENGTH - visibleW * 2){
-      cave.style.display="block";
+    // Recta final: mostrar cueva y no generar más rocas
+    if (worldX > TRACK_LENGTH - visibleW * 2) {
+      cave.style.display = "block";
       clearTimeout(obstacleTimer);
     } else {
-      cave.style.display="none";
+      cave.style.display = "none";
     }
 
+    // 🔒 Zona de meta: apagar roca y bloquear "game over"
+    if (worldX >= TRACK_LENGTH - FINISH_BUFFER) {
+      obstacle.style.animation = "none";
+      obstacle.style.opacity = "0";
+    }
+
+    // Victoria
     if(worldX>=TRACK_LENGTH) onVictory();
   }
   requestAnimationFrame(moveLoop);
@@ -276,7 +287,7 @@ function jump(){
   setTimeout(()=>{ player.classList.remove("jump"); isJumping=false; }, 550);
 }
 
-/* ===== Ataque (espada pequeña y más cerca del oso) ===== */
+/* ===== Ataque (espada pequeña y pegada) ===== */
 let attackCooldownUntil=0;
 function doAttack(){
   if(!running || hasWon) return;
@@ -286,11 +297,9 @@ function doAttack(){
 
   sndSword.currentTime = 0; sndSword.play();
 
-  // Coordenadas lógicas del oso
   const pLeft  = player.offsetLeft;
   const pRight = pLeft + player.offsetWidth;
 
-  // Más cerca del cuerpo
   const x = lastMoveDir>0 ? (pRight-6) : (pLeft-30);
   swordEl.style.left   = `${x}px`;
   swordEl.style.bottom = "18px";
@@ -299,7 +308,6 @@ function doAttack(){
   void swordEl.offsetWidth;
   swordEl.classList.add(lastMoveDir>0 ? "swing-right" : "swing-left");
 
-  // Colisión en pantalla (hitbox reducido y cercano)
   const pr = player.getBoundingClientRect();
   const or = obstacle.getBoundingClientRect();
   const hitbox = (lastMoveDir>0)
@@ -307,7 +315,6 @@ function doAttack(){
     : {left:pr.left-36, right:pr.left,     top:pr.bottom-48, bottom:pr.bottom-20};
   const hit = !(hitbox.right<or.left || hitbox.left>or.right || hitbox.bottom<or.top || hitbox.top>or.bottom);
 
-  // Destello más pegado
   const sparkX = lastMoveDir>0 ? (pRight+(hit?10:8)) : (pLeft-(hit?10:8)-22);
   sparkEl.style.left   = `${sparkX}px`;
   sparkEl.style.bottom = hit ? "42px" : "38px";
@@ -327,14 +334,14 @@ function onVictory(){
   obstacle.style.animation="none";
   obstacle.style.opacity="0";
   sndVictory.currentTime = 0; sndVictory.play();
-  musicStop(); // 🔇 detener música al ganar (puedes quitar esto si la quieres continua)
+  musicStop();
   victoryOverlay.classList.add("visible");
   updateOrientationOverlay();
 }
 function onGameOver(){
   if(hasWon) return;
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
-  musicStop(); // 🔇 detener música al perder (opcional)
+  musicStop();
   gameOverOverlay.classList.add("visible");
   updateOrientationOverlay();
 }
@@ -373,8 +380,10 @@ window.addEventListener("resize", ()=>{ fitStage(); updateOrientationOverlay(); 
 window.addEventListener("orientationchange", ()=>{ fitStage(); updateOrientationOverlay(); });
 document.addEventListener("DOMContentLoaded", ()=>{ fitStage(); updateOrientationOverlay(); });
 
+/* Detección de colisiones (bloqueada en zona de meta) */
 setInterval(()=>{
-  if(!running || hasWon) return;
+  if (!running || hasWon || worldX >= TRACK_LENGTH - FINISH_BUFFER) return;
+
   if(isColliding(player, obstacle)){
     if(isStomp(player, obstacle)){ sndHit.currentTime=0; sndHit.play(); destroyRock(); return; }
     const now=performance.now();
