@@ -28,14 +28,28 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 /* Escenario base (600×200) que se escala */
 .stage {
   position: relative; width: 600px; height: 200px; margin: 0 auto;
-  background:#fff url("img/FondoTile.PNG") repeat-x bottom/auto 100%;
+  /* OJO: el fondo ya no va aquí; lo llevan las capas .layer */
+  background: #fff;
   border: 2px solid #333; overflow: hidden;
   transform: scale(var(--scale)); transform-origin: top center;
 }
 
-/* Cielo día-noche */
+/* 🔵 Capas de parallax (pegadas al suelo, detrás de todo) */
+.layer {
+  position:absolute; left:0; right:0; bottom:0; top:0;
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  background-size: auto 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+.layer.back  { background-image: url("img/FondoTile.PNG"); opacity: .45; }
+.layer.mid   { background-image: url("img/FondoTile.PNG"); opacity: .75; }
+.layer.front { background-image: url("img/FondoTile.PNG"); opacity: 1; }
+
+/* Cielo día-noche (encima de las capas, debajo de player) */
 .sky-tint {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
   mix-blend-mode: multiply; opacity: 0.9;
   animation: skyCycle var(--dayCycle) linear infinite;
 }
@@ -50,7 +64,7 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
   position: absolute; bottom: 0; left: 50px;
   width: 80px; height: 80px;
   background:url("img/Oso.png") center bottom/contain no-repeat;
-  transform-origin: bottom center; z-index: 2;
+  transform-origin: bottom center; z-index: 3; /* sobre cielo y capas */
   transition: transform 0.1s linear;
 }
 #player.flip { transform: scaleX(-1); }
@@ -74,14 +88,14 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 
 /* Roca */
 #obstacle {position:absolute;bottom:0;right:-50px;width:50px;height:50px;
-  background:url("img/Roca.png") bottom center/contain no-repeat; z-index:1;}
+  background:url("img/Roca.png") bottom center/contain no-repeat; z-index:2;}
 @keyframes moveObstacle {from{right:-50px;} to{right:100%;}}
 #obstacle.disintegrate{animation:rockVanish .28s ease forwards;}
 @keyframes rockVanish{0%{opacity:1;}70%{opacity:.35;}100%{opacity:0;transform:translateY(-6px);}}
 
 /* Cueva */
 #cave {position:absolute;bottom:0;right:0;width:100px;height:100px;
-  background:url("img/Cueva.png") bottom center/contain no-repeat; display:none;}
+  background:url("img/Cueva.png") bottom center/contain no-repeat; display:none; z-index:2;}
 
 /* Salto */
 .jump{animation:jump .55s ease;}
