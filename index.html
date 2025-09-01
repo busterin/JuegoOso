@@ -39,6 +39,9 @@
   <!-- Contenedor del juego -->
   <div class="game" id="gameWrapper">
     <div class="stage" id="gameArea">
+      <!-- HUD de vidas (panales) -->
+      <div id="hud" class="hud" aria-label="Vidas restantes"></div>
+
       <div id="sky" class="sky-tint" aria-hidden="true"></div>
 
       <div id="player"></div>
@@ -57,7 +60,7 @@
     <button id="btnAttack" class="ctrl">🗡️</button>
   </div>
 
-  <!-- Overlay de orientación (lo controlamos por JS, NO por media query) -->
+  <!-- Overlay de orientación (controlado por JS) -->
   <div id="rotateOverlay" class="rotate-overlay">
     <div class="rotate-box">
       <p><strong>Gira el móvil</strong> para jugar en horizontal</p>
