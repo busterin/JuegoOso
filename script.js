@@ -23,15 +23,26 @@ const btnAttack = document.getElementById("btnAttack");
 
 /* Escalado responsive del escenario 600×200 */
 const BASE_W = 600, BASE_H = 200;
+function getControlsHeight(){
+  const c = document.querySelector('.controls');
+  if (!c || window.getComputedStyle(c).display === 'none') return 0;
+  return c.getBoundingClientRect().height + 18; // margen de aire inferior
+}
 function fitStage(){
-  const maxW = Math.min(window.innerWidth * 0.96, 1100);
-  const freeH = window.innerHeight -  (document.querySelector('.controls')?.offsetHeight || 0) - 40; // margen
+  // Ancho máximo (pantalla completa en móvil, tope 1100 en desktop)
+  const maxW = Math.min(window.innerWidth, 1100);
   const scaleW = maxW / BASE_W;
-  const scaleH = Math.max(0.6, (freeH > 0 ? (freeH / BASE_H) : 1)); // evita demasiado pequeño
-  const scale = Math.min(scaleW, scaleH);
+
+  // Alto disponible: toda la ventana menos la barra de controles flotante (si existe)
+  const freeH = window.innerHeight - getControlsHeight() - 16; // un pelín de margen
+  const scaleH = freeH / BASE_H;
+
+  // Elegimos el menor para respetar ambos límites
+  const scale = Math.max(0.6, Math.min(scaleW, scaleH)); // nunca menos de 0.6 para que no enano
   document.documentElement.style.setProperty('--scale', scale.toString());
-  // Ajusta alto del wrapper para que no se solape
-  gameWrapper.style.height = (BASE_H * scale + 4) + 'px'; // + bordes
+
+  // Ajusta alto del wrapper para que no se solape contenido de abajo
+  if (gameWrapper) gameWrapper.style.height = (BASE_H * scale + 4) + 'px'; // +bordes
 }
 window.addEventListener('resize', fitStage);
 window.addEventListener('orientationchange', fitStage);
