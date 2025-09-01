@@ -84,7 +84,6 @@ function startGame(){
   startScreen.classList.remove("visible"); victoryOverlay.classList.remove("visible"); gameOverOverlay.classList.remove("visible");
   swordEl.style.opacity="0"; swordEl.style.left="-9999px"; swordEl.classList.remove("swing-right","swing-left");
   sparkEl.style.left="-9999px"; sparkEl.classList.remove("burst");
-  player.classList.remove("walk");
   scheduleNextObstacle(700);
   fitStage();
 }
@@ -92,22 +91,22 @@ function startGame(){
 /* Inputs */
 document.onkeydown=e=>{
   if(e.code==="Space"){ e.preventDefault(); if(running&&!isJumping) jump(); }
-  if(e.code==="ArrowLeft"){  leftPressed=true;  lastMoveDir=-1; startWalking(); }
-  if(e.code==="ArrowRight"){ rightPressed=true; lastMoveDir= 1; startWalking(); }
+  if(e.code==="ArrowLeft"){  leftPressed=true;  lastMoveDir=-1; }
+  if(e.code==="ArrowRight"){ rightPressed=true; lastMoveDir= 1; }
   if(e.code==="KeyS"){ doAttack(); }
   if((e.code==="Enter"||e.code==="Space") && startScreen.classList.contains("visible")){ e.preventDefault(); playBtn.click(); }
 };
 document.onkeyup=e=>{
-  if(e.code==="ArrowLeft"){  leftPressed=false;  if(!rightPressed) stopWalking(); }
-  if(e.code==="ArrowRight"){ rightPressed=false; if(!leftPressed)  stopWalking(); }
+  if(e.code==="ArrowLeft"){  leftPressed=false; }
+  if(e.code==="ArrowRight"){ rightPressed=false; }
 };
 function bindHold(btn,on,off){
   if(!btn) return;
   btn.onmousedown = btn.ontouchstart = ev => { ev.preventDefault(); on(); };
   btn.onmouseup   = btn.onmouseleave = btn.ontouchend = btn.ontouchcancel = ev => { ev.preventDefault(); off(); };
 }
-bindHold(btnLeft,  ()=>{ leftPressed=true;  lastMoveDir=-1; startWalking(); }, ()=>{ leftPressed=false;  if(!rightPressed) stopWalking(); });
-bindHold(btnRight, ()=>{ rightPressed=true; lastMoveDir= 1; startWalking(); }, ()=>{ rightPressed=false; if(!leftPressed)  stopWalking(); });
+bindHold(btnLeft,  ()=>{ leftPressed=true; lastMoveDir=-1; }, ()=>{ leftPressed=false; });
+bindHold(btnRight, ()=>{ rightPressed=true; lastMoveDir= 1; }, ()=>{ rightPressed=false; });
 bindHold(btnJump,  ()=>{ if(running&&!isJumping) jump(); }, ()=>{});
 bindHold(btnAttack,()=>{ doAttack(); }, ()=>{});
 
@@ -136,7 +135,7 @@ function moveLoop(t){
     const worldVX=(rightPressed?PLAYER_SPEED:0) + boost - (leftPressed?PLAYER_SPEED:0);
     worldX=Math.max(0,Math.min(TRACK_LENGTH,worldX+worldVX*dt));
 
-    // Parallax del tile
+    // Fondo desplazable
     gameArea.style.backgroundPositionX = `${-worldX*0.25}px`;
 
     if(worldX>TRACK_LENGTH-rect.width*2) cave.style.display="block"; else cave.style.display="none";
@@ -158,10 +157,6 @@ function jump(){
   setTimeout(()=>{ player.classList.remove("jump"); isJumping=false; }, 550);
 }
 
-/* Caminar (activa/desactiva la animación del sprite sheet) */
-function startWalking(){ player.classList.add("walk"); }
-function stopWalking(){  player.classList.remove("walk"); }
-
 /* Ataque */
 let attackCooldownUntil=0;
 function doAttack(){
@@ -174,7 +169,6 @@ function doAttack(){
   const pr=player.getBoundingClientRect();
   const playerLeft=pr.left-gameRect.left, playerRight=pr.right-gameRect.left;
 
-  // Posición visual de la espada
   const x = lastMoveDir>0 ? (playerRight-12) : (playerLeft-58);
   swordEl.style.left = `${x}px`;
   swordEl.style.bottom = "18px";
@@ -183,7 +177,6 @@ function doAttack(){
   void swordEl.offsetWidth;
   swordEl.classList.add(lastMoveDir>0 ? "swing-right" : "swing-left");
 
-  // Hitbox virtual
   const hitbox = (lastMoveDir>0)
     ? {left:pr.right, right:pr.right+60, top:pr.bottom-70, bottom:pr.bottom-20}
     : {left:pr.left-60, right:pr.left,   top:pr.bottom-70, bottom:pr.bottom-20};
@@ -191,7 +184,6 @@ function doAttack(){
   const or = obstacle.getBoundingClientRect();
   const hit = !(hitbox.right<or.left || hitbox.left>or.right || hitbox.bottom<or.top || hitbox.top>or.bottom);
 
-  // Destello
   const sparkX = lastMoveDir>0 ? (playerRight+(hit?20:14)) : (playerLeft-(hit?20:14)-34);
   sparkEl.style.left = `${sparkX}px`;
   sparkEl.style.bottom = hit ? "42px" : "38px";
