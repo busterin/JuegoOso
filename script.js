@@ -1,4 +1,5 @@
-const gameArea = document.getElementById("gameArea");
+const gameWrapper = document.getElementById("gameWrapper");
+const gameArea    = document.getElementById("gameArea"); // .stage
 const player   = document.getElementById("player");
 const swordEl  = document.getElementById("sword");
 const sparkEl  = document.getElementById("spark");
@@ -19,6 +20,22 @@ const btnLeft   = document.getElementById("btnLeft");
 const btnRight  = document.getElementById("btnRight");
 const btnJump   = document.getElementById("btnJump");
 const btnAttack = document.getElementById("btnAttack");
+
+/* Escalado responsive del escenario 600×200 */
+const BASE_W = 600, BASE_H = 200;
+function fitStage(){
+  const maxW = Math.min(window.innerWidth * 0.96, 1100);
+  const freeH = window.innerHeight -  (document.querySelector('.controls')?.offsetHeight || 0) - 40; // margen
+  const scaleW = maxW / BASE_W;
+  const scaleH = Math.max(0.6, (freeH > 0 ? (freeH / BASE_H) : 1)); // evita demasiado pequeño
+  const scale = Math.min(scaleW, scaleH);
+  document.documentElement.style.setProperty('--scale', scale.toString());
+  // Ajusta alto del wrapper para que no se solape
+  gameWrapper.style.height = (BASE_H * scale + 4) + 'px'; // + bordes
+}
+window.addEventListener('resize', fitStage);
+window.addEventListener('orientationchange', fitStage);
+document.addEventListener('DOMContentLoaded', fitStage);
 
 /* Estado */
 let running=false,isJumping=false,gameOverLock=false;
@@ -63,6 +80,7 @@ function startGame(){
  swordEl.style.opacity="0";swordEl.style.left="-9999px";swordEl.classList.remove("swing-right","swing-left");
  sparkEl.style.left="-9999px";sparkEl.classList.remove("burst");
  scheduleNextObstacle(700);
+ fitStage();
 }
 
 /* Inputs */
@@ -103,6 +121,7 @@ function moveLoop(t){
    const boost=(performance.now()<jumpBoostUntil)?(JUMP_FORWARD_VX*lastMoveDir):0;
    const worldVX=(rightPressed?PLAYER_SPEED:0)+boost-(leftPressed?PLAYER_SPEED:0);
    worldX=Math.max(0,Math.min(TRACK_LENGTH,worldX+worldVX*dt));
+   // Scroll del tile (se repite infinito)
    gameArea.style.backgroundPositionX=`${-worldX*0.25}px`;
    if(worldX>TRACK_LENGTH-rect.width*2)cave.style.display="block";else cave.style.display="none";
    if(worldX>=TRACK_LENGTH)onVictory();
