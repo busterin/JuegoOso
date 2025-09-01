@@ -1,7 +1,20 @@
 /* Base */
 * { box-sizing: border-box; }
 :root { --dayCycle: 60s; --scale: 1; }
-body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
+
+/* Fondo general de la página */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: url("img/Portada.PNG") center/cover no-repeat fixed;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.6); /* velo traslúcido */
+  z-index: -1;
+}
 
 /* Overlays genéricos */
 .overlay {
@@ -26,7 +39,7 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 .btn:active { transform: translateY(2px); box-shadow:0 2px 0 #333; }
 .btn.primary { background:#2ecc71; border-color:#2ecc71; color:#fff; box-shadow:0 4px 0 #239d57; }
 
-/* ===== Portada a pantalla completa ===== */
+/* ===== Portada ===== */
 .portada { background: url("img/Portada.PNG") center/cover no-repeat; }
 .portada-box { background: none; border: none; box-shadow: none; padding: 0; }
 .portada .btn {
@@ -34,35 +47,20 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
   border-color: #27ae60; box-shadow: 0 6px 0 #239d57;
 }
 
-/* Contenedor responsive del juego (wrapper) */
+/* Contenedor del juego */
 .game { width: 100vw; max-width: 1100px; margin: 10px auto; }
 
-/* Escenario base (600×200) que se escala */
+/* Área de juego (600×200) */
 .stage {
   position: relative;
   width: 600px;
   height: 200px;
   margin: 0 auto;
-  background: url("img/Portada.PNG") center/cover no-repeat; /* portada de fondo */
+  background:#fff url("img/FondoTile.PNG") repeat-x bottom/auto 100%;
   border: 2px solid #333;
   overflow: hidden;
   transform: scale(var(--scale));
   transform-origin: top center;
-}
-
-/* Capa traslúcida encima de la portada */
-.stage::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,0.6); /* semitransparente, ajusta opacidad */
-  z-index: 0;
-}
-
-/* Asegurar que los elementos estén por encima del velo */
-#sky, #player, #sword, #spark, #obstacle, #cave, .hud {
-  position: relative;
-  z-index: 1;
 }
 
 /* HUD (vidas) */
@@ -101,11 +99,9 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 }
 #player.flip { transform: scaleX(-1); }
 #player.hurt { animation: hurtBlink .6s ease-in-out; }
-@keyframes hurtBlink {
-  0%,100%{opacity:1;} 20%,40%,60%,80%{opacity:.2;}
-}
+@keyframes hurtBlink { 0%,100%{opacity:1;} 20%,40%,60%,80%{opacity:.2;} }
 
-/* Espada + destello */
+/* Espada y destello */
 #sword { position:absolute; bottom:18px; left:-9999px;
   width:70px; height:70px; background:url("img/Espada.png") center/contain no-repeat;
   opacity:0; z-index:4; transform-origin:10% 80%;
@@ -146,9 +142,7 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 
 /* Salto del oso */
 .jump { animation: jump .55s ease; }
-@keyframes jump {
-  0%{bottom:0;} 50%{bottom:120px;} 100%{bottom:0;}
-}
+@keyframes jump { 0%{bottom:0;} 50%{bottom:120px;} 100%{bottom:0;} }
 
 /* Controles móviles */
 .controls{
