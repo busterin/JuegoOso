@@ -39,10 +39,30 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 
 /* Escenario base (600×200) que se escala */
 .stage {
-  position: relative; width: 600px; height: 200px; margin: 0 auto;
-  background:#fff url("img/FondoTile.PNG") repeat-x bottom/auto 100%;
-  border: 2px solid #333; overflow: hidden;
-  transform: scale(var(--scale)); transform-origin: top center;
+  position: relative;
+  width: 600px;
+  height: 200px;
+  margin: 0 auto;
+  background: url("img/Portada.PNG") center/cover no-repeat; /* portada de fondo */
+  border: 2px solid #333;
+  overflow: hidden;
+  transform: scale(var(--scale));
+  transform-origin: top center;
+}
+
+/* Capa traslúcida encima de la portada */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.6); /* semitransparente, ajusta opacidad */
+  z-index: 0;
+}
+
+/* Asegurar que los elementos estén por encima del velo */
+#sky, #player, #sword, #spark, #obstacle, #cave, .hud {
+  position: relative;
+  z-index: 1;
 }
 
 /* HUD (vidas) */
@@ -71,7 +91,7 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
   100%{background:transparent;}
 }
 
-/* Oso (volteo a la izquierda) */
+/* Oso */
 #player {
   position: absolute; bottom: 0; left: 50px;
   width: 80px; height: 80px;
@@ -110,10 +130,10 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 #obstacle.disintegrate{ animation:rockVanish .28s ease forwards; }
 @keyframes rockVanish{ 0%{opacity:1;}70%{opacity:.35;}100%{opacity:0;transform:translateY(-6px);} }
 
-/* Salto del enemigo (vertical, alto) */
+/* Enemigos saltadores */
 @keyframes jumpEnemy {
   0%   { bottom: 0; }
-  25%  { bottom: 120px; }  /* salto alto */
+  25%  { bottom: 120px; }
   55%  { bottom: 0; }
   100% { bottom: 0; }
 }
@@ -145,7 +165,7 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 }
 @media (min-width: 1200px){ .controls{ display:none; } }
 
-/* Overlay orientación controlado por JS */
+/* Overlay orientación */
 .rotate-overlay{
   position: fixed; inset:0; display:none;
   align-items:center; justify-content:center;
