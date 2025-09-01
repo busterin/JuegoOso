@@ -27,22 +27,11 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 .btn.primary { background:#2ecc71; border-color:#2ecc71; color:#fff; box-shadow:0 4px 0 #239d57; }
 
 /* ===== Portada a pantalla completa ===== */
-.portada {
-  background: url("img/Portada.PNG") center/cover no-repeat;
-}
-.portada-box {
-  background: none;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
+.portada { background: url("img/Portada.PNG") center/cover no-repeat; }
+.portada-box { background: none; border: none; box-shadow: none; padding: 0; }
 .portada .btn {
-  font-size: 28px;
-  padding: 18px 40px;
-  background: #2ecc71;
-  color: #fff;
-  border-color: #27ae60;
-  box-shadow: 0 6px 0 #239d57;
+  font-size: 28px; padding: 18px 40px; background: #2ecc71; color: #fff;
+  border-color: #27ae60; box-shadow: 0 6px 0 #239d57;
 }
 
 /* Contenedor responsive del juego (wrapper) */
@@ -124,3 +113,18 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
   background:#fff; font-size:22px; font-weight:700; touch-action: manipulation;
 }
 @media (min-width: 1200px){.controls{display:none;}}
+
+/* ===== Overlay de orientación (bloquea el juego en vertical) ===== */
+.rotate-overlay{
+  position: fixed; inset:0; display:none; align-items:center; justify-content:center;
+  background: rgba(0,0,0,.75); color:#fff; z-index: 3000; text-align:center;
+}
+.rotate-box{
+  background: rgba(0,0,0,.25);
+  border:2px solid #fff; border-radius:14px; padding:22px 26px; width:min(480px,90vw);
+}
+/* En vertical: mostramos overlay y desactivamos juego/controles */
+@media (orientation: portrait){
+  .rotate-overlay{ display:flex; }
+  .game, .controls{ filter: blur(2px); pointer-events:none; user-select:none; }
+}
