@@ -25,7 +25,7 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 /* Contenedor responsive del juego (wrapper) */
 .game { width: 100vw; max-width: 1100px; margin: 10px auto; }
 
-/* Escenario base (600×200) que se escala */
+/* Escenario base */
 .stage {
   position: relative; width: 600px; height: 200px; margin: 0 auto;
   background:#fff url("img/FondoTile.PNG") repeat-x bottom/auto 100%;
@@ -45,16 +45,13 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
   100%{background:transparent;}
 }
 
-/* Oso caminando (sprite sheet con 4 frames) */
+/* Oso (estático con Oso.png) */
 #player {
   position: absolute; bottom: 0; left: 50px;
   width: 80px; height: 80px;
-  /* 👇 nombre exacto con PNG en mayúsculas */
-  background:url("img/OsoWalk.PNG") 0 0/400% 100% no-repeat;
+  background:url("img/Oso.png") center bottom/contain no-repeat;
   transform-origin: bottom center; z-index: 2;
 }
-#player.walk { animation: walk 0.8s steps(4) infinite; }
-@keyframes walk { from { background-position-x: 0%; } to { background-position-x: -400%; } }
 
 /* Espada */
 #sword { position:absolute; bottom:18px; left:-9999px;
@@ -88,7 +85,7 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 .jump{animation:jump .55s ease;}
 @keyframes jump{0%{bottom:0;}50%{bottom:120px;}100%{bottom:0;}}
 
-/* Controles móviles: barra flotante fija (solo <=1200px) */
+/* Controles móviles */
 .controls{
   position: fixed; left:50%; transform: translateX(-50%);
   bottom: 10px; display:flex; gap:12px; justify-content:center; align-items:center;
