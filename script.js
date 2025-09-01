@@ -29,14 +29,41 @@ const parallaxMid    = document.querySelector(".layer-mid");
 const parallaxFront  = document.querySelector(".layer-front");
 const parallaxGround = document.querySelector(".layer-ground");
 
-/* ===== Sonidos (coloca los archivos en /sounds) ===== */
+/* ===== Sonidos ===== */
 const sndSword   = new Audio("sounds/sword.mp3");
 const sndHit     = new Audio("sounds/hit.mp3");
 const sndJump    = new Audio("sounds/jump.mp3");
 const sndVictory = new Audio("sounds/victory.mp3");
-[sndSword, sndHit, sndJump, sndVictory].forEach(s => { s.preload = "auto"; });
+/* Música de fondo */
+const sndBg      = new Audio("sounds/bg.mp3");
+sndBg.loop = true;
+sndBg.volume = 0.15;
+[sndSword, sndHit, sndJump, sndVictory, sndBg].forEach(s => { s.preload = "auto"; });
 
-/* ===== Escenario lógico 600×200 ===== */
+/* Fundidos para la música */
+function fadeTo(audio, target=0.15, ms=600) {
+  const step = (target - audio.volume) / Math.max(ms/30, 1);
+  clearInterval(audio._fadeTimer);
+  audio._fadeTimer = setInterval(() => {
+    const v = Math.max(0, Math.min(1, audio.volume + step));
+    audio.volume = v;
+    if ((step > 0 && v >= target) || (step < 0 && v <= target)) {
+      clearInterval(audio._fadeTimer);
+      audio.volume = target;
+    }
+  }, 30);
+}
+function musicStart() {
+  sndBg.currentTime = 0;
+  sndBg.play().catch(()=>{});
+  fadeTo(sndBg, 0.15, 500);
+}
+function musicStop() {
+  fadeTo(sndBg, 0.0, 400);
+  setTimeout(() => { try { sndBg.pause(); } catch(_){} }, 420);
+}
+
+/* ===== Escenario lógico ===== */
 const BASE_W = 600, BASE_H = 200;
 let currentScale = 1;
 
@@ -69,7 +96,7 @@ const TARGET_SECONDS=60;
 const TRACK_LENGTH=PLAYER_SPEED*TARGET_SECONDS;
 const RIGHT_FRACTION_WHEN_TRAVELING=0.65;
 
-/* ===== Vidas (panales) ===== */
+/* ===== Vidas ===== */
 const MAX_LIVES=3;
 let lives=MAX_LIVES;
 let invulnerableUntil=0;
@@ -97,7 +124,7 @@ function updateOrientationOverlay(){
   }
 }
 
-/* ===== Obstáculos (incluye enemigos saltadores 1/3) ===== */
+/* ===== Obstáculos (1/3 saltadores) ===== */
 const OB_MIN_DURATION=2.8,OB_MAX_DURATION=3.6,OB_MIN_DELAY=900,OB_MAX_DELAY=1700;
 let obstacleTimer=null;
 function rand(a,b){return Math.random()*(b-a)+a;}
@@ -105,15 +132,11 @@ function randi(a,b){return Math.floor(rand(a,b));}
 
 function spawnObstacle(){
   if(!running || hasWon) return;
-
   obstacle.classList.remove("disintegrate");
   obstacle.style.opacity="1";
   obstacle.style.right="-50px";
   obstacle.style.bottom="0";
-
   const dur = rand(OB_MIN_DURATION, OB_MAX_DURATION).toFixed(2);
-
-  // 1/3 aprox serán "saltadores" (salto vertical alto)
   const isJumper = Math.random() < 0.33;
   if (isJumper) {
     const jumpDur = rand(0.85, 1.25).toFixed(2);
@@ -122,8 +145,6 @@ function spawnObstacle(){
     obstacle.style.animation = `moveObstacle ${dur}s linear 1`;
   }
 }
-
-/* Reagendar tras terminar moveObstacle (ignoramos jumpEnemy infinito) */
 obstacle.addEventListener("animationend", (ev)=>{
   if (ev.animationName !== "moveObstacle") return;
   obstacle.style.animation="none";
@@ -138,9 +159,9 @@ playBtn.onclick=async ()=>{
   startGame();
 };
 retryWinBtn.onclick =()=>{ victoryOverlay.classList.remove("visible"); startGame(); };
-homeWinBtn.onclick  =()=>{ victoryOverlay.classList.remove("visible"); startScreen.classList.add("visible"); };
+homeWinBtn.onclick  =()=>{ musicStop(); victoryOverlay.classList.remove("visible"); startScreen.classList.add("visible"); };
 retryLoseBtn.onclick=()=>{ gameOverOverlay.classList.remove("visible"); startGame(); };
-homeLoseBtn.onclick =()=>{ gameOverOverlay.classList.remove("visible"); startScreen.classList.add("visible"); };
+homeLoseBtn.onclick =()=>{ musicStop(); gameOverOverlay.classList.remove("visible"); startScreen.classList.add("visible"); };
 
 function startGame(){
   running=true; isJumping=false; gameOverLock=false; hasWon=false;
@@ -161,6 +182,7 @@ function startGame(){
   scheduleNextObstacle(700);
   fitStage();
   updateOrientationOverlay();
+  musicStart(); // 🎵 arranca música
 }
 
 /* ===== Inputs ===== */
@@ -227,7 +249,6 @@ function moveLoop(t){
       moveBG(gameArea, 0.25);
     }
 
-    // Recta final: mostrar cueva y dejar de generar rocas
     if(worldX > TRACK_LENGTH - visibleW * 2){
       cave.style.display="block";
       clearTimeout(obstacleTimer);
@@ -255,7 +276,7 @@ function jump(){
   setTimeout(()=>{ player.classList.remove("jump"); isJumping=false; }, 550);
 }
 
-/* ===== Ataque (corregido para escala) ===== */
+/* ===== Ataque (espada pequeña y más cerca del oso) ===== */
 let attackCooldownUntil=0;
 function doAttack(){
   if(!running || hasWon) return;
@@ -265,11 +286,12 @@ function doAttack(){
 
   sndSword.currentTime = 0; sndSword.play();
 
-  // offsets = coordenadas lógicas (no afectadas por escala)
+  // Coordenadas lógicas del oso
   const pLeft  = player.offsetLeft;
   const pRight = pLeft + player.offsetWidth;
 
-  const x = lastMoveDir>0 ? (pRight-12) : (pLeft-58);
+  // Más cerca del cuerpo
+  const x = lastMoveDir>0 ? (pRight-6) : (pLeft-30);
   swordEl.style.left   = `${x}px`;
   swordEl.style.bottom = "18px";
   swordEl.style.opacity= "1";
@@ -277,24 +299,21 @@ function doAttack(){
   void swordEl.offsetWidth;
   swordEl.classList.add(lastMoveDir>0 ? "swing-right" : "swing-left");
 
-  // Colisión en coordenadas de pantalla (rects)
+  // Colisión en pantalla (hitbox reducido y cercano)
   const pr = player.getBoundingClientRect();
   const or = obstacle.getBoundingClientRect();
   const hitbox = (lastMoveDir>0)
-    ? {left:pr.right,     right:pr.right+60, top:pr.bottom-70, bottom:pr.bottom-20}
-    : {left:pr.left-60,   right:pr.left,     top:pr.bottom-70, bottom:pr.bottom-20};
+    ? {left:pr.right,   right:pr.right+36, top:pr.bottom-48, bottom:pr.bottom-20}
+    : {left:pr.left-36, right:pr.left,     top:pr.bottom-48, bottom:pr.bottom-20};
   const hit = !(hitbox.right<or.left || hitbox.left>or.right || hitbox.bottom<or.top || hitbox.top>or.bottom);
 
-  // Destello (usar offsets)
-  const sparkX = lastMoveDir>0 ? (pRight+(hit?20:14)) : (pLeft-(hit?20:14)-34);
+  // Destello más pegado
+  const sparkX = lastMoveDir>0 ? (pRight+(hit?10:8)) : (pLeft-(hit?10:8)-22);
   sparkEl.style.left   = `${sparkX}px`;
   sparkEl.style.bottom = hit ? "42px" : "38px";
   sparkEl.classList.remove("burst"); void sparkEl.offsetWidth; sparkEl.classList.add("burst");
 
-  if(hit){
-    sndHit.currentTime = 0; sndHit.play();
-    destroyRock();
-  }
+  if(hit){ sndHit.currentTime=0; sndHit.play(); destroyRock(); }
 
   setTimeout(()=>{ swordEl.style.opacity="0"; }, 240);
 }
@@ -302,18 +321,20 @@ function doAttack(){
 /* ===== Victoria / Game Over ===== */
 function onVictory(){
   if(hasWon) return;
-  hasWon = true;                 // bloquea colisiones y spawns
+  hasWon = true;
   running=false;
   clearTimeout(obstacleTimer);
   obstacle.style.animation="none";
   obstacle.style.opacity="0";
   sndVictory.currentTime = 0; sndVictory.play();
+  musicStop(); // 🔇 detener música al ganar (puedes quitar esto si la quieres continua)
   victoryOverlay.classList.add("visible");
   updateOrientationOverlay();
 }
 function onGameOver(){
-  if(hasWon) return;            // si ya ganaste, ignorar
+  if(hasWon) return;
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
+  musicStop(); // 🔇 detener música al perder (opcional)
   gameOverOverlay.classList.add("visible");
   updateOrientationOverlay();
 }
@@ -347,42 +368,24 @@ function isStomp(p,o){
   return isJumping && verticalOK && horizontalOverlap;
 }
 
-/* ===== Listeners globales y colisiones ===== */
+/* ===== Listeners ===== */
 window.addEventListener("resize", ()=>{ fitStage(); updateOrientationOverlay(); });
 window.addEventListener("orientationchange", ()=>{ fitStage(); updateOrientationOverlay(); });
-document.addEventListener("DOMContentLoaded", ()=>{
-  fitStage();
-  updateOrientationOverlay();
-});
+document.addEventListener("DOMContentLoaded", ()=>{ fitStage(); updateOrientationOverlay(); });
 
-/* Detección de colisiones (ignora si hasWon=true) */
 setInterval(()=>{
   if(!running || hasWon) return;
-
   if(isColliding(player, obstacle)){
-    if(isStomp(player, obstacle)){
-      sndHit.currentTime=0; sndHit.play();
-      destroyRock();
-      return;
-    }
-
+    if(isStomp(player, obstacle)){ sndHit.currentTime=0; sndHit.play(); destroyRock(); return; }
     const now=performance.now();
     if(now < invulnerableUntil) return;
-
-    // Perder vida
     lives = Math.max(0, lives - 1);
     renderLives();
-
-    // Feedback de daño e invulnerabilidad breve
     player.classList.add("hurt");
     invulnerableUntil = now + 800;
     setTimeout(()=> player.classList.remove("hurt"), 650);
-
     if(lives <= 0){
-      running=false;
-      clearTimeout(obstacleTimer);
-      obstacle.style.animation="none";
-      onGameOver();
+      running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none"; onGameOver();
     } else {
       resetRockAfterHit();
     }
