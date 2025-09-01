@@ -80,6 +80,7 @@ function startGame(){
   running=true; isJumping=false; gameOverLock=false;
   leftPressed=rightPressed=false; playerX=50; worldX=0; lastMoveDir=1;
   player.style.left=playerX+"px"; cave.style.display="none";
+  player.classList.remove("flip"); // mira a la derecha al empezar
   document.documentElement.style.setProperty('--dayCycle', `${TARGET_SECONDS}s`);
   startScreen.classList.remove("visible"); victoryOverlay.classList.remove("visible"); gameOverOverlay.classList.remove("visible");
   swordEl.style.opacity="0"; swordEl.style.left="-9999px"; swordEl.classList.remove("swing-right","swing-left");
@@ -91,8 +92,8 @@ function startGame(){
 /* Inputs */
 document.onkeydown=e=>{
   if(e.code==="Space"){ e.preventDefault(); if(running&&!isJumping) jump(); }
-  if(e.code==="ArrowLeft"){  leftPressed=true;  lastMoveDir=-1; }
-  if(e.code==="ArrowRight"){ rightPressed=true; lastMoveDir= 1; }
+  if(e.code==="ArrowLeft"){  leftPressed=true;  lastMoveDir=-1; player.classList.add("flip"); }
+  if(e.code==="ArrowRight"){ rightPressed=true; lastMoveDir= 1; player.classList.remove("flip"); }
   if(e.code==="KeyS"){ doAttack(); }
   if((e.code==="Enter"||e.code==="Space") && startScreen.classList.contains("visible")){ e.preventDefault(); playBtn.click(); }
 };
@@ -105,8 +106,8 @@ function bindHold(btn,on,off){
   btn.onmousedown = btn.ontouchstart = ev => { ev.preventDefault(); on(); };
   btn.onmouseup   = btn.onmouseleave = btn.ontouchend = btn.ontouchcancel = ev => { ev.preventDefault(); off(); };
 }
-bindHold(btnLeft,  ()=>{ leftPressed=true; lastMoveDir=-1; }, ()=>{ leftPressed=false; });
-bindHold(btnRight, ()=>{ rightPressed=true; lastMoveDir= 1; }, ()=>{ rightPressed=false; });
+bindHold(btnLeft,  ()=>{ leftPressed=true;  lastMoveDir=-1; player.classList.add("flip"); }, ()=>{ leftPressed=false; });
+bindHold(btnRight, ()=>{ rightPressed=true; lastMoveDir= 1; player.classList.remove("flip"); }, ()=>{ rightPressed=false; });
 bindHold(btnJump,  ()=>{ if(running&&!isJumping) jump(); }, ()=>{});
 bindHold(btnAttack,()=>{ doAttack(); }, ()=>{});
 
