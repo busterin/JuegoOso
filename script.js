@@ -33,7 +33,7 @@ let jumpBoostUntil = 0;
 let lastMoveDir = 1;
 
 /* 🔁 Mundo de 60 s caminando recto */
-const TRACK_LENGTH = PLAYER_SPEED * 60; // antes *120
+const TRACK_LENGTH = PLAYER_SPEED * 30; // antes *120
 let worldX = 0;
 
 const RIGHT_FRACTION_WHEN_TRAVELING = 0.65;
