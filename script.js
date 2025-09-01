@@ -29,6 +29,13 @@ const parallaxMid    = document.querySelector(".layer-mid");
 const parallaxFront  = document.querySelector(".layer-front");
 const parallaxGround = document.querySelector(".layer-ground");
 
+/* ===== Sonidos (coloca los archivos en /sounds) ===== */
+const sndSword   = new Audio("sounds/sword.mp3");
+const sndHit     = new Audio("sounds/hit.mp3");
+const sndJump    = new Audio("sounds/jump.mp3");
+const sndVictory = new Audio("sounds/victory.mp3");
+[sndSword, sndHit, sndJump, sndVictory].forEach(s => { s.preload = "auto"; });
+
 /* ===== Escenario lógico 600×200 ===== */
 const BASE_W = 600, BASE_H = 200;
 let currentScale = 1;
@@ -109,14 +116,14 @@ function spawnObstacle(){
   // 1/3 aprox serán "saltadores" (salto vertical alto)
   const isJumper = Math.random() < 0.33;
   if (isJumper) {
-    const jumpDur = rand(0.85, 1.25).toFixed(2); // aleatorio para variedad
+    const jumpDur = rand(0.85, 1.25).toFixed(2);
     obstacle.style.animation = `moveObstacle ${dur}s linear 1, jumpEnemy ${jumpDur}s ease-in-out infinite`;
   } else {
     obstacle.style.animation = `moveObstacle ${dur}s linear 1`;
   }
 }
 
-/* Solo reagendamos cuando termina moveObstacle (ignora jumpEnemy) */
+/* Reagendar tras terminar moveObstacle (ignoramos jumpEnemy infinito) */
 obstacle.addEventListener("animationend", (ev)=>{
   if (ev.animationName !== "moveObstacle") return;
   obstacle.style.animation="none";
@@ -242,6 +249,8 @@ function jump(){
   jumpBoostVX=JUMP_FORWARD_VX*dir;
   jumpBoostUntil=performance.now()+JUMP_BOOST_TIME;
 
+  sndJump.currentTime = 0; sndJump.play();
+
   player.classList.add("jump");
   setTimeout(()=>{ player.classList.remove("jump"); isJumping=false; }, 550);
 }
@@ -254,6 +263,9 @@ function doAttack(){
   if(now<attackCooldownUntil) return;
   attackCooldownUntil=now+220;
 
+  sndSword.currentTime = 0; sndSword.play();
+
+  // offsets = coordenadas lógicas (no afectadas por escala)
   const pLeft  = player.offsetLeft;
   const pRight = pLeft + player.offsetWidth;
 
@@ -265,6 +277,7 @@ function doAttack(){
   void swordEl.offsetWidth;
   swordEl.classList.add(lastMoveDir>0 ? "swing-right" : "swing-left");
 
+  // Colisión en coordenadas de pantalla (rects)
   const pr = player.getBoundingClientRect();
   const or = obstacle.getBoundingClientRect();
   const hitbox = (lastMoveDir>0)
@@ -272,12 +285,16 @@ function doAttack(){
     : {left:pr.left-60,   right:pr.left,     top:pr.bottom-70, bottom:pr.bottom-20};
   const hit = !(hitbox.right<or.left || hitbox.left>or.right || hitbox.bottom<or.top || hitbox.top>or.bottom);
 
+  // Destello (usar offsets)
   const sparkX = lastMoveDir>0 ? (pRight+(hit?20:14)) : (pLeft-(hit?20:14)-34);
   sparkEl.style.left   = `${sparkX}px`;
   sparkEl.style.bottom = hit ? "42px" : "38px";
   sparkEl.classList.remove("burst"); void sparkEl.offsetWidth; sparkEl.classList.add("burst");
 
-  if(hit) destroyRock();
+  if(hit){
+    sndHit.currentTime = 0; sndHit.play();
+    destroyRock();
+  }
 
   setTimeout(()=>{ swordEl.style.opacity="0"; }, 240);
 }
@@ -285,16 +302,17 @@ function doAttack(){
 /* ===== Victoria / Game Over ===== */
 function onVictory(){
   if(hasWon) return;
-  hasWon = true;
+  hasWon = true;                 // bloquea colisiones y spawns
   running=false;
   clearTimeout(obstacleTimer);
   obstacle.style.animation="none";
   obstacle.style.opacity="0";
+  sndVictory.currentTime = 0; sndVictory.play();
   victoryOverlay.classList.add("visible");
   updateOrientationOverlay();
 }
 function onGameOver(){
-  if(hasWon) return;
+  if(hasWon) return;            // si ya ganaste, ignorar
   running=false; clearTimeout(obstacleTimer); obstacle.style.animation="none";
   gameOverOverlay.classList.add("visible");
   updateOrientationOverlay();
@@ -337,11 +355,13 @@ document.addEventListener("DOMContentLoaded", ()=>{
   updateOrientationOverlay();
 });
 
+/* Detección de colisiones (ignora si hasWon=true) */
 setInterval(()=>{
   if(!running || hasWon) return;
 
   if(isColliding(player, obstacle)){
     if(isStomp(player, obstacle)){
+      sndHit.currentTime=0; sndHit.play();
       destroyRock();
       return;
     }
@@ -349,9 +369,11 @@ setInterval(()=>{
     const now=performance.now();
     if(now < invulnerableUntil) return;
 
+    // Perder vida
     lives = Math.max(0, lives - 1);
     renderLives();
 
+    // Feedback de daño e invulnerabilidad breve
     player.classList.add("hurt");
     invulnerableUntil = now + 800;
     setTimeout(()=> player.classList.remove("hurt"), 650);
