@@ -71,7 +71,7 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
   100%{background:transparent;}
 }
 
-/* Oso con volteo a la izquierda */
+/* Oso (volteo a la izquierda) */
 #player {
   position: absolute; bottom: 0; left: 50px;
   width: 80px; height: 80px;
@@ -82,11 +82,10 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 #player.flip { transform: scaleX(-1); }
 #player.hurt { animation: hurtBlink .6s ease-in-out; }
 @keyframes hurtBlink {
-  0%,100%{opacity:1;}
-  20%,40%,60%,80%{opacity:.2;}
+  0%,100%{opacity:1;} 20%,40%,60%,80%{opacity:.2;}
 }
 
-/* Espada */
+/* Espada + destello */
 #sword { position:absolute; bottom:18px; left:-9999px;
   width:70px; height:70px; background:url("img/Espada.png") center/contain no-repeat;
   opacity:0; z-index:4; transform-origin:10% 80%;
@@ -96,39 +95,40 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
 @keyframes swingRight{0%{transform:rotate(40deg);}100%{transform:rotate(-35deg);}}
 @keyframes swingLeft {0%{transform:scaleX(-1) rotate(40deg);}100%{transform:scaleX(-1) rotate(-35deg);}}
 
-/* Destello */
 #spark {position:absolute;width:34px;height:34px;left:-9999px;bottom:0;border-radius:50%;
   background:radial-gradient(circle,rgba(255,255,120,0.95)0%,rgba(255,170,0,0.9)50%,rgba(255,140,0,0)70%);
   z-index:5;opacity:0;}
 #spark.burst{animation:sparkPop 260ms ease-out forwards;}
 @keyframes sparkPop{0%{transform:scale(.6);opacity:0;}30%{transform:scale(1.2);opacity:1;}100%{transform:scale(1.6);opacity:0;}}
 
-/* Roca / enemigo */
+/* Enemigo (roca) */
 #obstacle {
   position:absolute; bottom:0; right:-50px; width:50px; height:50px;
   background:url("img/Roca.png") bottom center/contain no-repeat; z-index:1;
-  will-change: right, bottom;
 }
 @keyframes moveObstacle { from{ right:-50px; } to{ right:100%; } }
+#obstacle.disintegrate{ animation:rockVanish .28s ease forwards; }
+@keyframes rockVanish{ 0%{opacity:1;}70%{opacity:.35;}100%{opacity:0;transform:translateY(-6px);} }
 
-/* Enemigo saltador: salto vertical alto (más que el del oso) */
+/* Salto del enemigo (vertical, alto) */
 @keyframes jumpEnemy {
   0%   { bottom: 0; }
-  25%  { bottom: 130px; } /* altura del salto (alto) */
+  25%  { bottom: 120px; }  /* salto alto */
   55%  { bottom: 0; }
   100% { bottom: 0; }
 }
 
-#obstacle.disintegrate{animation:rockVanish .28s ease forwards;}
-@keyframes rockVanish{0%{opacity:1;}70%{opacity:.35;}100%{opacity:0;transform:translateY(-6px);}}
-
 /* Cueva */
-#cave {position:absolute;bottom:0;right:0;width:100px;height:100px;
-  background:url("img/Cueva.png") bottom center/contain no-repeat; display:none;}
+#cave {
+  position:absolute; bottom:0; right:0; width:100px; height:100px;
+  background:url("img/Cueva.png") bottom center/contain no-repeat; display:none;
+}
 
 /* Salto del oso */
-.jump{animation:jump .55s ease;}
-@keyframes jump{0%{bottom:0;}50%{bottom:120px;}100%{bottom:0;}}
+.jump { animation: jump .55s ease; }
+@keyframes jump {
+  0%{bottom:0;} 50%{bottom:120px;} 100%{bottom:0;}
+}
 
 /* Controles móviles */
 .controls{
@@ -143,9 +143,9 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; }
   width:min(22vw,120px); max-width:140px; height:56px; border:2px solid #333; border-radius:10px;
   background:#fff; font-size:22px; font-weight:700; touch-action: manipulation;
 }
-@media (min-width: 1200px){.controls{display:none;}}
+@media (min-width: 1200px){ .controls{ display:none; } }
 
-/* Overlay de orientación (controlado por JS) */
+/* Overlay orientación controlado por JS */
 .rotate-overlay{
   position: fixed; inset:0; display:none;
   align-items:center; justify-content:center;
